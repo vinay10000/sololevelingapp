@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">Hunter\'s Ascension</string>
+    <string name="title_home">Home</string>
+    <string name="title_workout">Workout</string>
+    <string name="title_stats">Stats</string>
+    <string name="title_profile">Profile</string>
+    
+    <!-- Login and Registration -->
+    <string name="prompt_username">Hunter Name</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="action_register">Register</string>
+    <string name="action_sign_out">Sign Out</string>
+    
+    <!-- Home Screen -->
+    <string name="welcome_hunter">Welcome, Hunter %1$s!</string>
+    <string name="current_rank">Current Rank: %1$s</string>
+    <string name="exp_to_next_rank">EXP to Next Rank: %1$d</string>
+    <string name="daily_quest">Daily Quest</string>
+    <string name="start_workout">Start Workout</string>
+    
+    <!-- Workout Screen -->
+    <string name="workout_title">Choose Your Hunt</string>
+    <string name="workout_type_strength">Strength</string>
+    <string name="workout_type_agility">Agility</string>
+    <string name="workout_type_vitality">Vitality</string>
+    <string name="workout_description">Select a workout to begin</string>
+    <string name="workout_start">Begin Hunt</string>
+    <string name="workout_complete">Complete</string>
+    
+    <!-- Stats Screen -->
+    <string name="stats_strength">STR</string>
+    <string name="stats_agility">AGI</string>
+    <string name="stats_vitality">VIT</string>
+    <string name="stats_intelligence">INT</string>
+    <string name="stats_luck">LUK</string>
+    <string name="stats_history">Workout History</string>
+    
+    <!-- Profile Screen -->
+    <string name="profile_rank">Rank</string>
+    <string name="profile_exp">EXP</string>
+    <string name="profile_streak">Current Streak</string>
+    <string name="profile_trophies">Trophies</string>
+    <string name="profile_abilities">Unlocked Abilities</string>
+    <string name="profile_edit">Edit Profile</string>
+</resources>

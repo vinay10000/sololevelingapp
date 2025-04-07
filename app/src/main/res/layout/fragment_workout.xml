@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".ui.workout.WorkoutFragment">
+
+    <TextView
+        android:id="@+id/tv_workout_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/workout_title"
+        android:textAppearance="?attr/textAppearanceHeadline1"
+        android:textColor="@color/teal_accent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_workout_select"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="@string/workout_select"
+        android:textAppearance="?attr/textAppearanceHeadline2"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_workout_title" />
+
+    <RadioGroup
+        android:id="@+id/rg_exercise_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_workout_select">
+
+        <RadioButton
+            android:id="@+id/rb_pushups"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/exercise_pushups"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+
+        <RadioButton
+            android:id="@+id/rb_squats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/exercise_squats"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+
+        <RadioButton
+            android:id="@+id/rb_running"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/exercise_running"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+    </RadioGroup>
+
+    <TextView
+        android:id="@+id/tv_difficulty"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Difficulty"
+        android:textAppearance="?attr/textAppearanceHeadline2"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/rg_exercise_type" />
+
+    <RadioGroup
+        android:id="@+id/rg_difficulty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_difficulty">
+
+        <RadioButton
+            android:id="@+id/rb_easy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/difficulty_easy"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+
+        <RadioButton
+            android:id="@+id/rb_medium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/difficulty_medium"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+
+        <RadioButton
+            android:id="@+id/rb_hard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/difficulty_hard"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+
+        <RadioButton
+            android:id="@+id/rb_boss"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/difficulty_boss"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+    </RadioGroup>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_reps"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:hint="Number of Reps"
+        app:boxStrokeColor="@color/purple_blue_primary"
+        app:hintTextColor="@color/purple_blue_light"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/rg_difficulty">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_reps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:textColor="@color/white" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_start_workout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/workout_start"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/til_reps" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_complete_workout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/workout_complete"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_start_workout"
+        tools:visibility="visible" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_cancel_workout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/rank_s"
+        android:text="@string/workout_cancel"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_complete_workout"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/tv_exp_gained"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:textAppearance="?attr/textAppearanceHeadline2"
+        android:textColor="@color/teal_accent"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_cancel_workout"
+        tools:text="EXP Gained: 150"
+        tools:visibility="visible" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

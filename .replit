@@ -1,0 +1,33 @@
+modules = ["kotlin", "java-17", "python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "AndroidBuildServer"
+
+[[workflows.workflow]]
+name = "AndroidBuildServer"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "./gradlew tasks"
+
+[deployment]
+run = ["sh", "-c", "./gradlew :app:assembleDebug"]
