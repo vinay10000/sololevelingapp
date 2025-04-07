@@ -4,116 +4,89 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.huntersascension.R
 import com.huntersascension.data.AppDatabase
-import com.huntersascension.data.UserRepository
-import com.huntersascension.databinding.FragmentRegisterBinding
-import com.huntersascension.utils.ExpCalculator
-import com.huntersascension.utils.PreferenceManager
-import com.huntersascension.utils.RankManager
-import com.huntersascension.utils.StatCalculator
+import com.huntersascension.data.repository.UserRepository
 
 class RegisterFragment : Fragment() {
-
-    private var _binding: FragmentRegisterBinding? = null
-    private val binding get() = _binding!!
     
-    private val viewModel: AuthViewModel by viewModels {
-        val database = AppDatabase.getDatabase(requireContext())
-        val userDao = database.userDao()
-        val workoutDao = database.workoutDao()
-        val trophyDao = database.trophyDao()
-        val rankManager = RankManager()
-        val statCalculator = StatCalculator()
-        val expCalculator = ExpCalculator()
-        val preferenceManager = PreferenceManager(requireContext())
-        
-        AuthViewModel.AuthViewModelFactory(
-            UserRepository(userDao, workoutDao, trophyDao, rankManager, statCalculator, expCalculator),
-            preferenceManager
-        )
-    }
-
+    private lateinit var authViewModel: AuthViewModel
+    private lateinit var usernameEditText: EditText
+    private lateinit var emailEditText: EditText
+    private lateinit var passwordEditText: EditText
+    private lateinit var confirmPasswordEditText: EditText
+    private lateinit var registerButton: Button
+    private lateinit var loginLink: TextView
+    private lateinit var loadingProgressBar: ProgressBar
+    
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentRegisterBinding.inflate(inflater, container, false)
-        return binding.root
+    ): View? {
+        val view = inflater.inflate(R.layout.fragment_register, container, false)
+        
+        usernameEditText = view.findViewById(R.id.username)
+        emailEditText = view.findViewById(R.id.email)
+        passwordEditText = view.findViewById(R.id.password)
+        confirmPasswordEditText = view.findViewById(R.id.confirm_password)
+        registerButton = view.findViewById(R.id.register)
+        loginLink = view.findViewById(R.id.login_link)
+        loadingProgressBar = view.findViewById(R.id.loading)
+        
+        return view
     }
-
+    
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        // Set up click listeners
-        binding.btnRegister.setOnClickListener {
-            attemptRegistration()
+        val userDao = AppDatabase.getDatabase(requireContext()).userDao()
+        val userRepository = UserRepository(userDao)
+        
+        // Create AuthViewModel (in a real app, use ViewModelFactory)
+        authViewModel = AuthViewModel(userRepository)
+        
+        authViewModel.registrationStatus.observe(viewLifecycleOwner, Observer { result ->
+            loadingProgressBar.visibility = View.GONE
+            
+            when (result) {
+                is AuthViewModel.RegistrationResult.Success -> {
+                    // Navigate to home screen
+                    findNavController().navigate(R.id.action_register_to_home)
+                }
+                is AuthViewModel.RegistrationResult.Error -> {
+                    Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
+        
+        registerButton.setOnClickListener {
+            loadingProgressBar.visibility = View.VISIBLE
+            val username = usernameEditText.text.toString()
+            val email = emailEditText.text.toString()
+            val password = passwordEditText.text.toString()
+            val confirmPassword = confirmPasswordEditText.text.toString()
+            
+            if (username.isBlank() || email.isBlank() || password.isBlank()) {
+                Toast.makeText(context, "All fields are required", Toast.LENGTH_SHORT).show()
+                loadingProgressBar.visibility = View.GONE
+                return@setOnClickListener
+            }
+            
+            authViewModel.register(email, username, password, confirmPassword)
         }
         
-        binding.tvLogin.setOnClickListener {
+        loginLink.setOnClickListener {
             findNavController().navigate(R.id.action_register_to_login)
         }
-        
-        // Observe registration result
-        viewModel.registrationResult.observe(viewLifecycleOwner) { result ->
-            binding.progressBar.visibility = View.GONE
-            
-            if (result.isSuccess) {
-                // Auto-login and navigate to home screen
-                val username = binding.etUsername.text.toString().trim()
-                val password = binding.etPassword.text.toString().trim()
-                viewModel.login(username, password)
-            } else {
-                // Show error
-                binding.tvError.visibility = View.VISIBLE
-                binding.tvError.text = result.exceptionOrNull()?.message ?: getString(R.string.error_register)
-            }
-        }
-        
-        // Observe login result after registration
-        viewModel.loginResult.observe(viewLifecycleOwner) { result ->
-            if (result.isSuccess) {
-                // Navigate to home screen
-                findNavController().navigate(R.id.action_register_to_home)
-            }
-        }
-    }
-    
-    private fun attemptRegistration() {
-        // Hide error if visible
-        binding.tvError.visibility = View.GONE
-        
-        // Get input values
-        val username = binding.etUsername.text.toString().trim()
-        val password = binding.etPassword.text.toString().trim()
-        
-        // Validate input
-        if (username.isEmpty() || password.isEmpty()) {
-            binding.tvError.visibility = View.VISIBLE
-            binding.tvError.text = "Please enter both username and password"
-            return
-        }
-        
-        // Password strength validation
-        if (password.length < 6) {
-            binding.tvError.visibility = View.VISIBLE
-            binding.tvError.text = "Password must be at least 6 characters long"
-            return
-        }
-        
-        // Show loading indicator
-        binding.progressBar.visibility = View.VISIBLE
-        
-        // Attempt registration
-        viewModel.register(username, password)
-    }
-    
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

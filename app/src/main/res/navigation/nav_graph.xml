@@ -45,42 +45,20 @@
         android:name="com.huntersascension.ui.workout.WorkoutFragment"
         android:label="Workout"
         tools:layout="@layout/fragment_workout">
-        <action
-            android:id="@+id/action_workoutFragment_to_workoutDetailFragment"
-            app:destination="@id/workoutDetailFragment" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/workoutDetailFragment"
-        android:name="com.huntersascension.ui.workout.WorkoutDetailFragment"
-        android:label="Workout Detail"
-        tools:layout="@layout/fragment_workout_detail">
-        <argument
-            android:name="workoutId"
-            app:argType="long" />
     </fragment>
 
     <fragment
         android:id="@+id/statsFragment"
         android:name="com.huntersascension.ui.stats.StatsFragment"
         android:label="Stats"
-        tools:layout="@layout/fragment_stats" />
+        tools:layout="@layout/fragment_workout" />
 
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.huntersascension.ui.profile.ProfileFragment"
         android:label="Profile"
         tools:layout="@layout/fragment_profile">
-        <action
-            android:id="@+id/action_profileFragment_to_editProfileFragment"
-            app:destination="@id/editProfileFragment" />
     </fragment>
-
-    <fragment
-        android:id="@+id/editProfileFragment"
-        android:name="com.huntersascension.ui.profile.EditProfileFragment"
-        android:label="Edit Profile"
-        tools:layout="@layout/fragment_edit_profile" />
 
     <fragment
         android:id="@+id/rankUpFragment"

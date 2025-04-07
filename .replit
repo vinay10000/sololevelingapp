@@ -27,7 +27,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "./gradlew tasks"
+args = "cd ${REPL_HOME} && ./gradlew assembleDebug"
 
 [deployment]
 run = ["sh", "-c", "./gradlew :app:assembleDebug"]

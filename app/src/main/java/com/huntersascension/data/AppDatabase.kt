@@ -5,35 +5,42 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.huntersascension.data.converter.Converters
-import com.huntersascension.data.dao.UserDao
-import com.huntersascension.data.dao.WorkoutDao
-import com.huntersascension.data.dao.TrophyDao
-import com.huntersascension.data.model.User
-import com.huntersascension.data.model.Workout
-import com.huntersascension.data.model.Trophy
+import com.huntersascension.data.dao.*
+import com.huntersascension.data.model.*
+import com.huntersascension.utils.DateConverter
 
 @Database(
-    entities = [User::class, Workout::class, Trophy::class],
+    entities = [
+        User::class,
+        UserSettings::class,
+        LeaderboardEntry::class,
+        StreakMilestone::class,
+        Workout::class,
+        WorkoutExercise::class
+    ],
     version = 1,
     exportSchema = false
 )
-@TypeConverters(Converters::class)
+@TypeConverters(DateConverter::class)
 abstract class AppDatabase : RoomDatabase() {
+    
     abstract fun userDao(): UserDao
+    abstract fun userSettingsDao(): UserSettingsDao
+    abstract fun leaderboardDao(): LeaderboardDao
+    abstract fun streakMilestoneDao(): StreakMilestoneDao
     abstract fun workoutDao(): WorkoutDao
-    abstract fun trophyDao(): TrophyDao
-
+    abstract fun workoutExerciseDao(): WorkoutExerciseDao
+    
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
-
+        
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "hunters_ascension_database"
+                    "huntergains_database"
                 )
                 .fallbackToDestructiveMigration()
                 .build()

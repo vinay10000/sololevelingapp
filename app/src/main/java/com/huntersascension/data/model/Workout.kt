@@ -2,20 +2,28 @@ package com.huntersascension.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import com.huntersascension.data.converter.Converters
 import java.util.Date
 
 @Entity(tableName = "workouts")
-@TypeConverters(Converters::class)
 data class Workout(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val username: String,
-    val type: String, // "STRENGTH", "AGILITY", "VITALITY"
-    val exercises: List<String>,
-    val completedExercises: List<String> = listOf(),
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val userEmail: String,
+    val workoutName: String,
+    val workoutType: String, // "strength", "cardio", "flexibility", "hybrid"
+    val difficulty: Int, // 1-5 scale
+    val mainStat: String, // "strength", "agility", "vitality", "intelligence", "luck"
+    val secondaryStat: String, // secondary stat that gets minor improvements
     val startTime: Date,
     val endTime: Date? = null,
-    val expGained: Int = 0,
-    val isCompleted: Boolean = false
+    val duration: Long = 0, // in milliseconds
+    val completed: Boolean = false,
+    val caloriesBurned: Int = 0,
+    val experienceGained: Int = 0,
+    val strengthGained: Int = 0,
+    val agilityGained: Int = 0,
+    val vitalityGained: Int = 0,
+    val intelligenceGained: Int = 0,
+    val luckGained: Int = 0,
+    val notes: String = ""
 )

@@ -1,19 +1,28 @@
 package com.huntersascension.data.model
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import com.huntersascension.data.converter.Converters
 import java.util.Date
 
-@Entity(tableName = "trophies")
-@TypeConverters(Converters::class)
+@Entity(
+    tableName = "trophies",
+    foreignKeys = [
+        ForeignKey(
+            entity = User::class,
+            parentColumns = ["email"],
+            childColumns = ["userEmail"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
 data class Trophy(
-    @PrimaryKey val id: String,
-    val username: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val userEmail: String,
     val name: String,
     val description: String,
-    val iconResource: String,
-    val acquiredDate: Date,
-    val rarity: String // COMMON, RARE, EPIC, LEGENDARY
+    val dateEarned: Date,
+    val experienceRewarded: Int,
+    val imagePath: String?
 )

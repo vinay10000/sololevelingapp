@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Workout Types -->
+    <string-array name="workout_types">
+        <item>Strength</item>
+        <item>Cardio</item>
+        <item>Flexibility</item>
+        <item>Hybrid</item>
+    </string-array>
+    
+    <!-- Stats -->
+    <string-array name="stats">
+        <item>Strength</item>
+        <item>Agility</item>
+        <item>Vitality</item>
+        <item>Intelligence</item>
+        <item>Luck</item>
+    </string-array>
+    
+    <!-- Exercise Types -->
+    <string-array name="exercise_types">
+        <item>Weight Training</item>
+        <item>Bodyweight</item>
+        <item>Cardio</item>
+        <item>Stretching</item>
+        <item>Other</item>
+    </string-array>
+</resources>
