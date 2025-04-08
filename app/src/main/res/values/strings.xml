@@ -1,35 +1,93 @@
 <resources>
     <string name="app_name">Hunter\'s Ascension</string>
-    <!-- Navigation Labels -->
-    <string name="title_home">Home</string>
-    <string name="title_workout">Workout</string>
-    <string name="title_stats">Stats</string>
-    <string name="title_profile">Profile</string>
     
-    <!-- Auth -->
-    <string name="prompt_email">Email</string>
-    <string name="prompt_password">Password</string>
-    <string name="action_sign_in">Sign in</string>
-    <string name="action_sign_up">Sign up</string>
-    <string name="action_sign_out">Sign out</string>
-    <string name="welcome">Welcome!</string>
-    <string name="invalid_username">Not a valid username</string>
-    <string name="invalid_password">Password must be at least 6 characters</string>
-    <string name="login_failed">Login failed</string>
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_workouts">Workouts</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_rank">Rank</string>
+    <string name="nav_stats">Stats</string>
     
-    <!-- Workout -->
-    <string name="start_workout">Start Workout</string>
-    <string name="end_workout">End Workout</string>
+    <!-- Common -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="start">Start</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
+    <string name="complete">Complete</string>
+    <string name="share">Share</string>
+    <string name="done">Done</string>
+    
+    <!-- Workout Section -->
+    <string name="workouts">Workouts</string>
+    <string name="my_workouts">My Workouts</string>
+    <string name="create_workout">Create Workout</string>
+    <string name="edit_workout">Edit Workout</string>
+    <string name="workout_stats">Workout Stats</string>
+    <string name="create_new_workout">Create New Workout</string>
+    <string name="workout_name">Workout Name</string>
+    <string name="workout_type">Workout Type</string>
+    <string name="workout_description">Description (optional)</string>
+    <string name="difficulty">Difficulty</string>
+    <string name="primary_stat">Primary Stat</string>
+    <string name="secondary_stat">Secondary Stat</string>
+    <string name="add_to_favorites">Add to Favorites</string>
+    
+    <!-- Exercise Section -->
+    <string name="exercises">Exercises</string>
     <string name="add_exercise">Add Exercise</string>
-    <string name="save_workout">Save Workout</string>
+    <string name="edit_exercise">Edit Exercise</string>
+    <string name="exercise_name">Exercise Name</string>
+    <string name="exercise_type">Exercise Type</string>
+    <string name="no_exercises">No exercises added yet</string>
+    <string name="no_workouts">No workouts available</string>
     
-    <!-- Stats -->
-    <string name="strength">STR</string>
-    <string name="agility">AGI</string>
-    <string name="vitality">VIT</string>
-    <string name="intelligence">INT</string>
-    <string name="luck">LUK</string>
-    <string name="experience">EXP</string>
-    <string name="level">Level</string>
-    <string name="rank">Rank</string>
+    <!-- Weight Training Parameters -->
+    <string name="sets">Sets</string>
+    <string name="reps">Reps</string>
+    <string name="weight">Weight (kg)</string>
+    <string name="bodyweight_only">Bodyweight only</string>
+    
+    <!-- Cardio Parameters -->
+    <string name="duration">Duration (min)</string>
+    <string name="distance">Distance (km)</string>
+    <string name="calories">Calories (optional)</string>
+    
+    <!-- Flexibility Parameters -->
+    <string name="hold_time">Hold Time (sec)</string>
+    
+    <!-- Active Workout -->
+    <string name="rest">Rest</string>
+    <string name="current_exercise">Current Exercise</string>
+    <string name="complete_set">Complete Set</string>
+    <string name="complete_workout">Complete Workout</string>
+    <string name="upcoming_exercises">Upcoming Exercises</string>
+    
+    <!-- Workout Complete -->
+    <string name="workout_complete">Workout Complete!</string>
+    <string name="workout_stats_title">Workout Stats</string>
+    <string name="rewards">Rewards</string>
+    <string name="experience_points">Experience Points</string>
+    <string name="stat_bonus">Stat Bonus</string>
+    <string name="level_up">LEVEL UP!</string>
+    
+    <!-- Filter Chips -->
+    <string name="filter_by">Filter by:</string>
+    <string name="all">All</string>
+    <string name="strength">Strength</string>
+    <string name="cardio">Cardio</string>
+    <string name="flexibility">Flexibility</string>
+    <string name="hybrid">Hybrid</string>
+    
+    <!-- Stats Screen -->
+    <string name="summary">Summary</string>
+    <string name="total_workouts">Total Workouts</string>
+    <string name="current_streak">Current Streak</string>
+    <string name="best_streak">Best Streak</string>
+    <string name="total_time">Total Time</string>
+    <string name="avg_duration">Avg. Duration</string>
+    <string name="total_calories">Total Calories</string>
+    <string name="recent_workouts">Recent Workouts</string>
 </resources>

@@ -4,44 +4,91 @@ import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.huntersascension.data.model.Exercise
 
+/**
+ * Data Access Object for Exercise entities
+ */
 @Dao
 interface ExerciseDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(exercise: Exercise): Long
+    /**
+     * Get all exercises
+     * @return LiveData list of all exercises
+     */
+    @Query("SELECT * FROM exercises ORDER BY name ASC")
+    fun getAllExercises(): LiveData<List<Exercise>>
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMultiple(exercises: List<Exercise>)
-    
-    @Update
-    suspend fun update(exercise: Exercise)
-    
-    @Delete
-    suspend fun delete(exercise: Exercise)
-    
-    @Query("DELETE FROM exercises WHERE id = :exerciseId")
-    suspend fun deleteById(exerciseId: Long)
-    
-    @Query("SELECT * FROM exercises WHERE workoutId = :workoutId ORDER BY id ASC")
-    fun getExercisesForWorkout(workoutId: Long): LiveData<List<Exercise>>
-    
+    /**
+     * Get an exercise by ID
+     * @param exerciseId The ID of the exercise
+     * @return The exercise with the specified ID, or null if not found
+     */
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
-    fun getExerciseById(exerciseId: Long): LiveData<Exercise>
+    suspend fun getExerciseById(exerciseId: Long): Exercise?
     
-    @Query("UPDATE exercises SET completed = :completed WHERE id = :exerciseId")
-    suspend fun updateExerciseCompletion(exerciseId: Long, completed: Boolean)
+    /**
+     * Insert a new exercise
+     * @param exercise The exercise to insert
+     * @return The ID of the inserted exercise
+     */
+    @Insert
+    suspend fun insertExercise(exercise: Exercise): Long
     
-    @Query("UPDATE exercises SET sets = :sets, reps = :reps, weight = :weight, time = :time, distance = :distance, caloriesBurned = :calories WHERE id = :exerciseId")
-    suspend fun updateExerciseMetrics(exerciseId: Long, sets: Int, reps: Int, weight: Float, time: Long, distance: Float, calories: Int)
+    /**
+     * Update an existing exercise
+     * @param exercise The exercise to update
+     */
+    @Update
+    suspend fun updateExercise(exercise: Exercise)
     
-    @Query("SELECT COUNT(*) FROM exercises WHERE workoutId = :workoutId")
-    suspend fun getExerciseCountForWorkout(workoutId: Long): Int
+    /**
+     * Delete an exercise
+     * @param exercise The exercise to delete
+     */
+    @Delete
+    suspend fun deleteExercise(exercise: Exercise)
     
-    @Query("SELECT COUNT(*) FROM exercises WHERE workoutId = :workoutId AND completed = 1")
-    suspend fun getCompletedExerciseCountForWorkout(workoutId: Long): Int
+    /**
+     * Get exercises by type
+     * @param type The exercise type
+     * @return LiveData list of exercises of the specified type
+     */
+    @Query("SELECT * FROM exercises WHERE type = :type ORDER BY name ASC")
+    fun getExercisesByType(type: String): LiveData<List<Exercise>>
     
-    @Query("SELECT SUM(experienceValue) FROM exercises WHERE workoutId = :workoutId AND completed = 1")
-    suspend fun getTotalExperienceForWorkout(workoutId: Long): Int?
+    /**
+     * Get exercises by muscle group
+     * @param muscleGroup The muscle group
+     * @return LiveData list of exercises for the specified muscle group
+     */
+    @Query("SELECT * FROM exercises WHERE muscleGroup = :muscleGroup ORDER BY name ASC")
+    fun getExercisesByMuscleGroup(muscleGroup: String): LiveData<List<Exercise>>
     
-    @Query("DELETE FROM exercises WHERE workoutId = :workoutId")
-    suspend fun deleteExercisesForWorkout(workoutId: Long)
+    /**
+     * Get exercises by equipment
+     * @param equipment The equipment
+     * @return LiveData list of exercises that use the specified equipment
+     */
+    @Query("SELECT * FROM exercises WHERE equipment = :equipment ORDER BY name ASC")
+    fun getExercisesByEquipment(equipment: String): LiveData<List<Exercise>>
+    
+    /**
+     * Get bodyweight exercises
+     * @return LiveData list of bodyweight exercises
+     */
+    @Query("SELECT * FROM exercises WHERE isBodyweight = 1 ORDER BY name ASC")
+    fun getBodyweightExercises(): LiveData<List<Exercise>>
+    
+    /**
+     * Get compound exercises
+     * @return LiveData list of compound exercises
+     */
+    @Query("SELECT * FROM exercises WHERE isCompound = 1 ORDER BY name ASC")
+    fun getCompoundExercises(): LiveData<List<Exercise>>
+    
+    /**
+     * Search for exercises by name
+     * @param query The search query
+     * @return LiveData list of exercises matching the query
+     */
+    @Query("SELECT * FROM exercises WHERE name LIKE :query ORDER BY name ASC")
+    fun searchExercisesByName(query: String): LiveData<List<Exercise>>
 }

@@ -3,82 +3,103 @@ package com.huntersascension.data.repository
 import androidx.lifecycle.LiveData
 import com.huntersascension.data.dao.ExerciseDao
 import com.huntersascension.data.model.Exercise
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
+/**
+ * Repository for exercise data
+ */
 class ExerciseRepository(private val exerciseDao: ExerciseDao) {
     
-    fun getExercisesForWorkout(workoutId: Long): LiveData<List<Exercise>> {
-        return exerciseDao.getExercisesForWorkout(workoutId)
+    /**
+     * Get all exercises
+     * @return LiveData list of all exercises
+     */
+    fun getAllExercises(): LiveData<List<Exercise>> {
+        return exerciseDao.getAllExercises()
     }
     
-    fun getExerciseById(exerciseId: Long): LiveData<Exercise> {
+    /**
+     * Get an exercise by ID
+     * @param exerciseId The ID of the exercise
+     * @return The exercise with the specified ID, or null if not found
+     */
+    suspend fun getExerciseById(exerciseId: Long): Exercise? {
         return exerciseDao.getExerciseById(exerciseId)
     }
     
+    /**
+     * Insert a new exercise
+     * @param exercise The exercise to insert
+     * @return The ID of the inserted exercise
+     */
     suspend fun insertExercise(exercise: Exercise): Long {
-        return withContext(Dispatchers.IO) {
-            exerciseDao.insert(exercise)
-        }
+        return exerciseDao.insertExercise(exercise)
     }
     
-    suspend fun insertMultipleExercises(exercises: List<Exercise>) {
-        withContext(Dispatchers.IO) {
-            exerciseDao.insertMultiple(exercises)
-        }
-    }
-    
+    /**
+     * Update an existing exercise
+     * @param exercise The exercise to update
+     */
     suspend fun updateExercise(exercise: Exercise) {
-        withContext(Dispatchers.IO) {
-            exerciseDao.update(exercise)
-        }
+        exerciseDao.updateExercise(exercise)
     }
     
+    /**
+     * Delete an exercise
+     * @param exercise The exercise to delete
+     */
     suspend fun deleteExercise(exercise: Exercise) {
-        withContext(Dispatchers.IO) {
-            exerciseDao.delete(exercise)
-        }
+        exerciseDao.deleteExercise(exercise)
     }
     
-    suspend fun deleteExerciseById(exerciseId: Long) {
-        withContext(Dispatchers.IO) {
-            exerciseDao.deleteById(exerciseId)
-        }
+    /**
+     * Get exercises by type
+     * @param type The exercise type
+     * @return LiveData list of exercises of the specified type
+     */
+    fun getExercisesByType(type: String): LiveData<List<Exercise>> {
+        return exerciseDao.getExercisesByType(type)
     }
     
-    suspend fun markExerciseComplete(exerciseId: Long, completed: Boolean) {
-        withContext(Dispatchers.IO) {
-            exerciseDao.updateExerciseCompletion(exerciseId, completed)
-        }
+    /**
+     * Get exercises by muscle group
+     * @param muscleGroup The muscle group
+     * @return LiveData list of exercises for the specified muscle group
+     */
+    fun getExercisesByMuscleGroup(muscleGroup: String): LiveData<List<Exercise>> {
+        return exerciseDao.getExercisesByMuscleGroup(muscleGroup)
     }
     
-    suspend fun updateExerciseMetrics(exerciseId: Long, sets: Int, reps: Int, weight: Float, time: Long, distance: Float, calories: Int) {
-        withContext(Dispatchers.IO) {
-            exerciseDao.updateExerciseMetrics(exerciseId, sets, reps, weight, time, distance, calories)
-        }
+    /**
+     * Get exercises by equipment
+     * @param equipment The equipment
+     * @return LiveData list of exercises that use the specified equipment
+     */
+    fun getExercisesByEquipment(equipment: String): LiveData<List<Exercise>> {
+        return exerciseDao.getExercisesByEquipment(equipment)
     }
     
-    suspend fun getExerciseCount(workoutId: Long): Int {
-        return withContext(Dispatchers.IO) {
-            exerciseDao.getExerciseCountForWorkout(workoutId)
-        }
+    /**
+     * Get bodyweight exercises
+     * @return LiveData list of bodyweight exercises
+     */
+    fun getBodyweightExercises(): LiveData<List<Exercise>> {
+        return exerciseDao.getBodyweightExercises()
     }
     
-    suspend fun getCompletedExerciseCount(workoutId: Long): Int {
-        return withContext(Dispatchers.IO) {
-            exerciseDao.getCompletedExerciseCountForWorkout(workoutId)
-        }
+    /**
+     * Get compound exercises
+     * @return LiveData list of compound exercises
+     */
+    fun getCompoundExercises(): LiveData<List<Exercise>> {
+        return exerciseDao.getCompoundExercises()
     }
     
-    suspend fun getTotalExperienceForWorkout(workoutId: Long): Int {
-        return withContext(Dispatchers.IO) {
-            exerciseDao.getTotalExperienceForWorkout(workoutId) ?: 0
-        }
-    }
-    
-    suspend fun clearExercisesForWorkout(workoutId: Long) {
-        withContext(Dispatchers.IO) {
-            exerciseDao.deleteExercisesForWorkout(workoutId)
-        }
+    /**
+     * Search for exercises by name
+     * @param query The search query
+     * @return LiveData list of exercises matching the query
+     */
+    fun searchExercisesByName(query: String): LiveData<List<Exercise>> {
+        return exerciseDao.searchExercisesByName("%$query%")
     }
 }

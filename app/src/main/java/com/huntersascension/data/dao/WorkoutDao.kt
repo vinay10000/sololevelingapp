@@ -3,46 +3,95 @@ package com.huntersascension.data.dao
 import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.huntersascension.data.model.Workout
-import java.util.Date
 
+/**
+ * Data Access Object for Workout entities
+ */
 @Dao
 interface WorkoutDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(workout: Workout): Long
+    /**
+     * Get all workouts
+     * @return LiveData list of all workouts
+     */
+    @Query("SELECT * FROM workouts ORDER BY name ASC")
+    fun getAllWorkouts(): LiveData<List<Workout>>
     
-    @Update
-    suspend fun update(workout: Workout)
+    /**
+     * Get workouts for a specific user
+     * @param userId The ID of the user
+     * @return LiveData list of workouts for the user
+     */
+    @Query("SELECT * FROM workouts WHERE userId = :userId ORDER BY name ASC")
+    fun getWorkoutsForUser(userId: Long): LiveData<List<Workout>>
     
-    @Query("DELETE FROM workouts WHERE id = :workoutId")
-    suspend fun deleteWorkout(workoutId: Long)
+    /**
+     * Get favorite workouts for a user
+     * @param userId The ID of the user
+     * @return LiveData list of favorite workouts for the user
+     */
+    @Query("SELECT * FROM workouts WHERE userId = :userId AND isFavorite = 1 ORDER BY name ASC")
+    fun getFavoriteWorkoutsForUser(userId: Long): LiveData<List<Workout>>
     
-    @Query("SELECT * FROM workouts WHERE userEmail = :userEmail ORDER BY startTime DESC")
-    fun getAllUserWorkouts(userEmail: String): LiveData<List<Workout>>
-    
+    /**
+     * Get a workout by ID
+     * @param workoutId The ID of the workout
+     * @return The workout with the specified ID, or null if not found
+     */
     @Query("SELECT * FROM workouts WHERE id = :workoutId")
-    fun getWorkoutById(workoutId: Long): LiveData<Workout>
+    suspend fun getWorkoutById(workoutId: Long): Workout?
     
-    @Query("SELECT * FROM workouts WHERE userEmail = :userEmail AND workoutType = :workoutType ORDER BY startTime DESC")
-    fun getWorkoutsByType(userEmail: String, workoutType: String): LiveData<List<Workout>>
+    /**
+     * Insert a new workout
+     * @param workout The workout to insert
+     * @return The ID of the inserted workout
+     */
+    @Insert
+    suspend fun insertWorkout(workout: Workout): Long
     
-    @Query("SELECT * FROM workouts WHERE userEmail = :userEmail AND completed = 1 ORDER BY startTime DESC LIMIT :limit")
-    fun getRecentCompletedWorkouts(userEmail: String, limit: Int): LiveData<List<Workout>>
+    /**
+     * Update an existing workout
+     * @param workout The workout to update
+     */
+    @Update
+    suspend fun updateWorkout(workout: Workout)
     
-    @Query("SELECT * FROM workouts WHERE userEmail = :userEmail AND startTime BETWEEN :startDate AND :endDate ORDER BY startTime DESC")
-    fun getWorkoutsByDateRange(userEmail: String, startDate: Date, endDate: Date): LiveData<List<Workout>>
+    /**
+     * Delete a workout
+     * @param workout The workout to delete
+     */
+    @Delete
+    suspend fun deleteWorkout(workout: Workout)
     
-    @Query("UPDATE workouts SET completed = 1, endTime = :endTime, duration = :duration, caloriesBurned = :calories, experienceGained = :experienceGained, strengthGained = :strengthGained, agilityGained = :agilityGained, vitalityGained = :vitalityGained, intelligenceGained = :intelligenceGained, luckGained = :luckGained WHERE id = :workoutId")
-    suspend fun completeWorkout(workoutId: Long, endTime: Date, duration: Long, calories: Int, experienceGained: Int, strengthGained: Int, agilityGained: Int, vitalityGained: Int, intelligenceGained: Int, luckGained: Int)
+    /**
+     * Toggle favorite status for a workout
+     * @param workoutId The ID of the workout
+     * @param isFavorite The new favorite status
+     */
+    @Query("UPDATE workouts SET isFavorite = :isFavorite WHERE id = :workoutId")
+    suspend fun setFavoriteStatus(workoutId: Long, isFavorite: Boolean)
     
-    @Query("SELECT SUM(duration) FROM workouts WHERE userEmail = :userEmail AND completed = 1")
-    suspend fun getTotalWorkoutDuration(userEmail: String): Long?
+    /**
+     * Get workouts by type
+     * @param type The workout type
+     * @return LiveData list of workouts of the specified type
+     */
+    @Query("SELECT * FROM workouts WHERE type = :type ORDER BY name ASC")
+    fun getWorkoutsByType(type: String): LiveData<List<Workout>>
     
-    @Query("SELECT SUM(caloriesBurned) FROM workouts WHERE userEmail = :userEmail AND completed = 1")
-    suspend fun getTotalCaloriesBurned(userEmail: String): Int?
+    /**
+     * Search for workouts by name
+     * @param query The search query
+     * @return LiveData list of workouts matching the query
+     */
+    @Query("SELECT * FROM workouts WHERE name LIKE :query ORDER BY name ASC")
+    fun searchWorkoutsByName(query: String): LiveData<List<Workout>>
     
-    @Query("SELECT COUNT(*) FROM workouts WHERE userEmail = :userEmail AND completed = 1 AND workoutType = :workoutType")
-    suspend fun getCompletedWorkoutCountByType(userEmail: String, workoutType: String): Int
-    
-    @Query("SELECT AVG(duration) FROM workouts WHERE userEmail = :userEmail AND completed = 1")
-    suspend fun getAverageWorkoutDuration(userEmail: String): Double?
+    /**
+     * Get recent workouts for a user
+     * @param userId The ID of the user
+     * @param limit The maximum number of workouts to return
+     * @return LiveData list of recent workouts for the user
+     */
+    @Query("SELECT * FROM workouts WHERE userId = :userId ORDER BY updatedAt DESC LIMIT :limit")
+    fun getRecentWorkoutsForUser(userId: Long, limit: Int): LiveData<List<Workout>>
 }

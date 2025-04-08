@@ -1,143 +1,112 @@
 package com.huntersascension.data.repository
 
-import androidx.lifecycle.LiveData
 import com.huntersascension.data.dao.UserDao
 import com.huntersascension.data.model.User
-import java.util.Date
-import java.util.Calendar
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import java.util.*
 
+/**
+ * Repository for user data
+ */
 class UserRepository(private val userDao: UserDao) {
     
-    fun getUserByEmail(email: String): LiveData<User> {
+    /**
+     * Get a user by ID
+     * @param userId The ID of the user
+     * @return The user with the specified ID, or null if not found
+     */
+    suspend fun getUserById(userId: Long): User? {
+        return userDao.getUserById(userId)
+    }
+    
+    /**
+     * Get a user by username
+     * @param username The username of the user
+     * @return The user with the specified username, or null if not found
+     */
+    suspend fun getUserByUsername(username: String): User? {
+        return userDao.getUserByUsername(username)
+    }
+    
+    /**
+     * Get a user by email
+     * @param email The email of the user
+     * @return The user with the specified email, or null if not found
+     */
+    suspend fun getUserByEmail(email: String): User? {
         return userDao.getUserByEmail(email)
     }
     
-    suspend fun registerUser(user: User): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                userDao.insert(user)
-                true
-            } catch (e: Exception) {
-                false
-            }
-        }
+    /**
+     * Insert a new user
+     * @param user The user to insert
+     * @return The ID of the inserted user
+     */
+    suspend fun insertUser(user: User): Long {
+        return userDao.insertUser(user)
     }
     
-    suspend fun loginUser(email: String, passwordHash: String): User? {
-        return withContext(Dispatchers.IO) {
-            userDao.login(email, passwordHash)
-        }
-    }
-    
+    /**
+     * Update an existing user
+     * @param user The user to update
+     */
     suspend fun updateUser(user: User) {
-        withContext(Dispatchers.IO) {
-            userDao.update(user)
-        }
+        userDao.updateUser(user)
     }
     
-    suspend fun addExperience(email: String, expPoints: Int): Int {
-        return withContext(Dispatchers.IO) {
-            val user = userDao.getUserByEmail(email).value ?: return@withContext 0
-            
-            // Calculate new experience and level
-            val currentExp = user.experience
-            val currentLevel = user.level
-            val newExp = currentExp + expPoints
-            
-            // Simple leveling formula: level = sqrt(exp / 100)
-            val newLevel = kotlin.math.sqrt(newExp.toDouble() / 100).toInt().coerceAtLeast(1)
-            
-            // Update user level and experience
-            userDao.updateLevelAndExp(email, newLevel, newExp)
-            
-            // Return level difference to check if user leveled up
-            newLevel - currentLevel
-        }
+    /**
+     * Add XP to a user
+     * @param userId The ID of the user
+     * @param xpToAdd The amount of XP to add
+     * @return True if the user leveled up, false otherwise
+     */
+    suspend fun addXp(userId: Long, xpToAdd: Int): Boolean {
+        return userDao.addXpToUser(userId, xpToAdd)
     }
     
-    suspend fun updateRank(email: String, newRank: String) {
-        withContext(Dispatchers.IO) {
-            userDao.updateRank(email, newRank)
-        }
+    /**
+     * Increment a user's stat
+     * @param userId The ID of the user
+     * @param statName The name of the stat to increment (Strength, Endurance, Agility, Vitality)
+     * @param amount The amount to increment the stat by
+     */
+    suspend fun incrementStat(userId: Long, statName: String, amount: Int) {
+        userDao.incrementStat(userId, statName, amount)
     }
     
-    suspend fun incrementWorkout(email: String) {
-        withContext(Dispatchers.IO) {
-            userDao.incrementWorkouts(email)
-            val currentDate = Date()
-            userDao.updateLastWorkoutDate(email, currentDate)
-            
-            // Update streak logic
-            updateStreak(email, currentDate)
-        }
+    /**
+     * Update user's workout stats
+     * @param userId The ID of the user
+     * @param workoutsToAdd Number of workouts to add
+     * @param caloriesToAdd Number of calories to add
+     * @param minutesToAdd Number of minutes to add
+     */
+    suspend fun updateWorkoutStats(userId: Long, workoutsToAdd: Int, caloriesToAdd: Int, minutesToAdd: Int) {
+        userDao.updateWorkoutStats(userId, workoutsToAdd, caloriesToAdd, minutesToAdd)
     }
     
-    private suspend fun updateStreak(email: String, currentDate: Date) {
-        val lastWorkoutDate = userDao.getLastWorkoutDate(email)
-        
-        if (lastWorkoutDate == null) {
-            // First workout, set streak to 1
-            userDao.updateConsecutiveStreak(email, 1)
-            userDao.updateMaxStreak(email, 1)
-            return
-        }
-        
-        // Check if the last workout was yesterday or today
-        val calendar = Calendar.getInstance()
-        calendar.time = currentDate
-        val today = calendar.get(Calendar.DAY_OF_YEAR)
-        val thisYear = calendar.get(Calendar.YEAR)
-        
-        calendar.time = lastWorkoutDate
-        val lastWorkoutDay = calendar.get(Calendar.DAY_OF_YEAR)
-        val lastWorkoutYear = calendar.get(Calendar.YEAR)
-        
-        when {
-            // Same day workout, no streak update
-            thisYear == lastWorkoutYear && today == lastWorkoutDay -> {
-                // Do nothing, already worked out today
-            }
-            
-            // Yesterday's workout, increment streak
-            (thisYear == lastWorkoutYear && today - lastWorkoutDay == 1) ||
-            (thisYear > lastWorkoutYear && today == 1 && 
-             isLastDayOfYear(lastWorkoutDay, lastWorkoutYear)) -> {
-                userDao.incrementStreak(email)
-                userDao.updateMaxStreakIfNeeded(email)
-            }
-            
-            // Workout after missing days, reset streak to 1
-            else -> {
-                userDao.updateConsecutiveStreak(email, 1)
-            }
-        }
+    /**
+     * Update user's last workout date
+     * @param userId The ID of the user
+     */
+    suspend fun updateLastWorkoutDate(userId: Long) {
+        userDao.updateLastWorkoutDate(userId)
     }
     
-    private fun isLastDayOfYear(dayOfYear: Int, year: Int): Boolean {
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.YEAR, year)
-        calendar.set(Calendar.MONTH, Calendar.DECEMBER)
-        calendar.set(Calendar.DAY_OF_MONTH, 31)
-        return dayOfYear == calendar.get(Calendar.DAY_OF_YEAR)
+    /**
+     * Update user's streak
+     * @param userId The ID of the user
+     * @param currentStreak The current streak
+     */
+    suspend fun updateStreak(userId: Long, currentStreak: Int) {
+        userDao.updateStreak(userId, currentStreak)
     }
     
-    suspend fun getCurrentStreak(email: String): Int {
-        return withContext(Dispatchers.IO) {
-            userDao.getCurrentStreak(email)
-        }
-    }
-    
-    suspend fun updateStat(email: String, statName: String, value: Int) {
-        withContext(Dispatchers.IO) {
-            when (statName.lowercase()) {
-                "strength" -> userDao.updateStrength(email, value)
-                "agility" -> userDao.updateAgility(email, value)
-                "vitality" -> userDao.updateVitality(email, value)
-                "intelligence" -> userDao.updateIntelligence(email, value)
-                "luck" -> userDao.updateLuck(email, value)
-            }
-        }
+    /**
+     * Update user's rank
+     * @param userId The ID of the user
+     * @param newRank The new rank
+     */
+    suspend fun updateRank(userId: Long, newRank: String) {
+        userDao.updateRank(userId, newRank)
     }
 }

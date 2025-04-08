@@ -7,22 +7,40 @@
         <item>Flexibility</item>
         <item>Hybrid</item>
     </string-array>
-    
-    <!-- Stats -->
-    <string-array name="stats">
-        <item>Strength</item>
-        <item>Agility</item>
-        <item>Vitality</item>
-        <item>Intelligence</item>
-        <item>Luck</item>
-    </string-array>
-    
+
     <!-- Exercise Types -->
     <string-array name="exercise_types">
         <item>Weight Training</item>
         <item>Bodyweight</item>
         <item>Cardio</item>
-        <item>Stretching</item>
-        <item>Other</item>
+        <item>Flexibility</item>
+    </string-array>
+
+    <!-- Character Stats -->
+    <string-array name="stats">
+        <item>Strength</item>
+        <item>Endurance</item>
+        <item>Agility</item>
+        <item>Dexterity</item>
+        <item>Vitality</item>
+    </string-array>
+    
+    <!-- Difficulty Levels -->
+    <string-array name="difficulty_levels">
+        <item>Very Easy</item>
+        <item>Easy</item>
+        <item>Medium</item>
+        <item>Hard</item>
+        <item>Very Hard</item>
+    </string-array>
+    
+    <!-- Rest Duration Options -->
+    <string-array name="rest_duration">
+        <item>30 seconds</item>
+        <item>45 seconds</item>
+        <item>60 seconds</item>
+        <item>90 seconds</item>
+        <item>120 seconds</item>
+        <item>Custom</item>
     </string-array>
 </resources>
