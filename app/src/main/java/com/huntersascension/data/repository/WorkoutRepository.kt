@@ -3,106 +3,118 @@ package com.huntersascension.data.repository
 import androidx.lifecycle.LiveData
 import com.huntersascension.data.dao.WorkoutDao
 import com.huntersascension.data.model.Workout
+import com.huntersascension.data.model.WorkoutType
+import com.huntersascension.data.model.WorkoutDifficulty
+import com.huntersascension.data.model.Rank
+import com.huntersascension.data.model.Stat
 
 /**
- * Repository for workout data
+ * Repository for interacting with workout data
  */
 class WorkoutRepository(private val workoutDao: WorkoutDao) {
     
     /**
-     * Get all workouts
-     * @return LiveData list of all workouts
+     * Gets a workout by ID
+     */
+    fun getWorkoutById(id: Long): LiveData<Workout?> {
+        return workoutDao.getWorkoutById(id)
+    }
+    
+    /**
+     * Gets a workout by ID synchronously
+     */
+    suspend fun getWorkoutByIdSync(id: Long): Workout? {
+        return workoutDao.getWorkoutByIdSync(id)
+    }
+    
+    /**
+     * Gets all workouts
      */
     fun getAllWorkouts(): LiveData<List<Workout>> {
         return workoutDao.getAllWorkouts()
     }
     
     /**
-     * Get workouts for a specific user
-     * @param userId The ID of the user
-     * @return LiveData list of workouts for the user
+     * Gets all public workouts
      */
-    fun getWorkoutsForUser(userId: Long): LiveData<List<Workout>> {
-        return workoutDao.getWorkoutsForUser(userId)
+    fun getPublicWorkouts(): LiveData<List<Workout>> {
+        return workoutDao.getPublicWorkouts()
     }
     
     /**
-     * Get favorite workouts for a user
-     * @param userId The ID of the user
-     * @return LiveData list of favorite workouts for the user
+     * Gets workouts available to a specific user
      */
-    fun getFavoriteWorkoutsForUser(userId: Long): LiveData<List<Workout>> {
-        return workoutDao.getFavoriteWorkoutsForUser(userId)
+    fun getWorkoutsForUser(username: String): LiveData<List<Workout>> {
+        return workoutDao.getWorkoutsForUser(username)
     }
     
     /**
-     * Get a workout by ID
-     * @param workoutId The ID of the workout
-     * @return The workout with the specified ID, or null if not found
+     * Gets workouts created by a specific user
      */
-    suspend fun getWorkoutById(workoutId: Long): Workout? {
-        return workoutDao.getWorkoutById(workoutId)
+    fun getUserCreatedWorkouts(username: String): LiveData<List<Workout>> {
+        return workoutDao.getUserCreatedWorkouts(username)
     }
     
     /**
-     * Insert a new workout
-     * @param workout The workout to insert
-     * @return The ID of the inserted workout
+     * Gets recommended workouts for a user's rank
      */
-    suspend fun insertWorkout(workout: Workout): Long {
+    fun getRecommendedWorkouts(userRank: Rank): LiveData<List<Workout>> {
+        return workoutDao.getRecommendedWorkouts(userRank)
+    }
+    
+    /**
+     * Gets workouts of a specific type available to a user's rank
+     */
+    fun getWorkoutsByType(type: WorkoutType, userRank: Rank): LiveData<List<Workout>> {
+        return workoutDao.getWorkoutsByType(type, userRank)
+    }
+    
+    /**
+     * Gets workouts of a specific difficulty available to a user's rank
+     */
+    fun getWorkoutsByDifficulty(difficulty: WorkoutDifficulty, userRank: Rank): LiveData<List<Workout>> {
+        return workoutDao.getWorkoutsByDifficulty(difficulty, userRank)
+    }
+    
+    /**
+     * Gets workouts that target a specific stat
+     */
+    fun getWorkoutsByStat(stat: Stat): LiveData<List<Workout>> {
+        return workoutDao.getWorkoutsByStat(stat)
+    }
+    
+    /**
+     * Creates a new workout
+     */
+    suspend fun createWorkout(workout: Workout): Long {
         return workoutDao.insertWorkout(workout)
     }
     
     /**
-     * Update an existing workout
-     * @param workout The workout to update
+     * Updates an existing workout
      */
     suspend fun updateWorkout(workout: Workout) {
         workoutDao.updateWorkout(workout)
     }
     
     /**
-     * Delete a workout
-     * @param workout The workout to delete
+     * Deletes a workout
      */
     suspend fun deleteWorkout(workout: Workout) {
         workoutDao.deleteWorkout(workout)
     }
     
     /**
-     * Toggle favorite status for a workout
-     * @param workoutId The ID of the workout
-     * @param isFavorite The new favorite status
+     * Deletes a workout by ID and creator username
      */
-    suspend fun setFavoriteStatus(workoutId: Long, isFavorite: Boolean) {
-        workoutDao.setFavoriteStatus(workoutId, isFavorite)
+    suspend fun deleteWorkoutByIdAndCreator(id: Long, username: String): Int {
+        return workoutDao.deleteWorkoutByIdAndCreator(id, username)
     }
     
     /**
-     * Get workouts by type
-     * @param type The workout type
-     * @return LiveData list of workouts of the specified type
+     * Gets the count of workouts created by a user
      */
-    fun getWorkoutsByType(type: String): LiveData<List<Workout>> {
-        return workoutDao.getWorkoutsByType(type)
-    }
-    
-    /**
-     * Search for workouts by name
-     * @param query The search query
-     * @return LiveData list of workouts matching the query
-     */
-    fun searchWorkoutsByName(query: String): LiveData<List<Workout>> {
-        return workoutDao.searchWorkoutsByName("%$query%")
-    }
-    
-    /**
-     * Get recent workouts for a user
-     * @param userId The ID of the user
-     * @param limit The maximum number of workouts to return
-     * @return LiveData list of recent workouts for the user
-     */
-    fun getRecentWorkoutsForUser(userId: Long, limit: Int): LiveData<List<Workout>> {
-        return workoutDao.getRecentWorkoutsForUser(userId, limit)
+    suspend fun getUserWorkoutCount(username: String): Int {
+        return workoutDao.getUserWorkoutCount(username)
     }
 }

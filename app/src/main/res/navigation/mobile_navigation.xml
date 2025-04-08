@@ -3,63 +3,53 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_login">
+    app:startDestination="@id/nav_home">
 
     <fragment
-        android:id="@+id/navigation_login"
-        android:name="com.huntersascension.ui.auth.LoginFragment"
-        android:label="Login"
-        tools:layout="@layout/fragment_login">
-        <action
-            android:id="@+id/action_login_to_register"
-            app:destination="@id/navigation_register" />
-        <action
-            android:id="@+id/action_login_to_home"
-            app:destination="@id/navigation_home"
-            app:popUpTo="@id/navigation_login"
-            app:popUpToInclusive="true" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/navigation_register"
-        android:name="com.huntersascension.ui.auth.RegisterFragment"
-        android:label="Register"
-        tools:layout="@layout/fragment_register">
-        <action
-            android:id="@+id/action_register_to_login"
-            app:destination="@id/navigation_login" />
-        <action
-            android:id="@+id/action_register_to_home"
-            app:destination="@id/navigation_home"
-            app:popUpTo="@id/navigation_login"
-            app:popUpToInclusive="true" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/navigation_home"
+        android:id="@+id/nav_home"
         android:name="com.huntersascension.ui.home.HomeFragment"
-        android:label="@string/title_home"
-        tools:layout="@layout/fragment_home">
-        <action
-            android:id="@+id/action_home_to_workout"
-            app:destination="@id/navigation_workout" />
-    </fragment>
+        android:label="@string/nav_home"
+        tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/navigation_workout"
-        android:name="com.huntersascension.ui.workout.WorkoutFragment"
-        android:label="@string/title_workout"
-        tools:layout="@layout/fragment_workout" />
+        android:id="@+id/nav_workouts"
+        android:name="com.huntersascension.ui.workout.WorkoutListFragment"
+        android:label="@string/nav_workouts"
+        tools:layout="@layout/fragment_workout_list" />
 
     <fragment
-        android:id="@+id/navigation_stats"
-        android:name="com.huntersascension.ui.stats.StatsFragment"
-        android:label="@string/title_stats"
-        tools:layout="@layout/fragment_stats" />
-
-    <fragment
-        android:id="@+id/navigation_profile"
+        android:id="@+id/nav_profile"
         android:name="com.huntersascension.ui.profile.ProfileFragment"
-        android:label="@string/title_profile"
+        android:label="@string/nav_profile"
         tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/nav_achievements"
+        android:name="com.huntersascension.ui.achievement.AchievementFragment"
+        android:label="@string/nav_achievements"
+        tools:layout="@layout/fragment_achievement" />
+
+    <fragment
+        android:id="@+id/nav_quests"
+        android:name="com.huntersascension.ui.quest.QuestFragment"
+        android:label="@string/nav_quests"
+        tools:layout="@layout/fragment_quest" />
+
+    <fragment
+        android:id="@+id/nav_abilities"
+        android:name="com.huntersascension.ui.ability.AbilityFragment"
+        android:label="@string/nav_abilities"
+        tools:layout="@layout/fragment_ability" />
+
+    <fragment
+        android:id="@+id/nav_login"
+        android:name="com.huntersascension.ui.auth.LoginFragment"
+        android:label="@string/nav_login"
+        tools:layout="@layout/fragment_login" />
+
+    <fragment
+        android:id="@+id/nav_register"
+        android:name="com.huntersascension.ui.auth.RegisterFragment"
+        android:label="@string/nav_register"
+        tools:layout="@layout/fragment_register" />
 </navigation>

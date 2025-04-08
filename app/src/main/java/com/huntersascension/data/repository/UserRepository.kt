@@ -1,112 +1,241 @@
 package com.huntersascension.data.repository
 
+import androidx.lifecycle.LiveData
 import com.huntersascension.data.dao.UserDao
 import com.huntersascension.data.model.User
+import com.huntersascension.data.model.Rank
+import java.security.MessageDigest
 import java.util.*
 
 /**
- * Repository for user data
+ * Repository for interacting with user data
  */
 class UserRepository(private val userDao: UserDao) {
     
     /**
-     * Get a user by ID
-     * @param userId The ID of the user
-     * @return The user with the specified ID, or null if not found
+     * Gets a user by username
      */
-    suspend fun getUserById(userId: Long): User? {
-        return userDao.getUserById(userId)
-    }
-    
-    /**
-     * Get a user by username
-     * @param username The username of the user
-     * @return The user with the specified username, or null if not found
-     */
-    suspend fun getUserByUsername(username: String): User? {
+    fun getUserByUsername(username: String): LiveData<User?> {
         return userDao.getUserByUsername(username)
     }
     
     /**
-     * Get a user by email
-     * @param email The email of the user
-     * @return The user with the specified email, or null if not found
+     * Attempts to log in a user
      */
-    suspend fun getUserByEmail(email: String): User? {
-        return userDao.getUserByEmail(email)
+    suspend fun login(username: String, password: String): Boolean {
+        val passwordHash = hashPassword(password)
+        val user = userDao.getUserByUsernameSync(username)
+        return user != null && user.passwordHash == passwordHash
     }
     
     /**
-     * Insert a new user
-     * @param user The user to insert
-     * @return The ID of the inserted user
+     * Registers a new user
      */
-    suspend fun insertUser(user: User): Long {
-        return userDao.insertUser(user)
+    suspend fun register(username: String, hunterName: String, password: String): Boolean {
+        val existingUser = userDao.getUserByUsernameSync(username)
+        if (existingUser != null) {
+            return false
+        }
+        
+        val passwordHash = hashPassword(password)
+        val newUser = User(
+            username = username,
+            hunterName = hunterName,
+            passwordHash = passwordHash
+        )
+        
+        userDao.insertUser(newUser)
+        return true
     }
     
     /**
-     * Update an existing user
-     * @param user The user to update
+     * Updates a user
      */
     suspend fun updateUser(user: User) {
         userDao.updateUser(user)
     }
     
     /**
-     * Add XP to a user
-     * @param userId The ID of the user
-     * @param xpToAdd The amount of XP to add
-     * @return True if the user leveled up, false otherwise
+     * Deletes a user
      */
-    suspend fun addXp(userId: Long, xpToAdd: Int): Boolean {
-        return userDao.addXpToUser(userId, xpToAdd)
+    suspend fun deleteUser(user: User) {
+        userDao.deleteUser(user)
     }
     
     /**
-     * Increment a user's stat
-     * @param userId The ID of the user
-     * @param statName The name of the stat to increment (Strength, Endurance, Agility, Vitality)
-     * @param amount The amount to increment the stat by
+     * Gets top users by rank
      */
-    suspend fun incrementStat(userId: Long, statName: String, amount: Int) {
-        userDao.incrementStat(userId, statName, amount)
+    fun getTopUsers(limit: Int = 10): LiveData<List<User>> {
+        return userDao.getTopUsers(limit)
     }
     
     /**
-     * Update user's workout stats
-     * @param userId The ID of the user
-     * @param workoutsToAdd Number of workouts to add
-     * @param caloriesToAdd Number of calories to add
-     * @param minutesToAdd Number of minutes to add
+     * Gets users of a specific rank
      */
-    suspend fun updateWorkoutStats(userId: Long, workoutsToAdd: Int, caloriesToAdd: Int, minutesToAdd: Int) {
-        userDao.updateWorkoutStats(userId, workoutsToAdd, caloriesToAdd, minutesToAdd)
+    fun getUsersByRank(rank: Rank, limit: Int = 10): LiveData<List<User>> {
+        return userDao.getUsersByRank(rank, limit)
     }
     
     /**
-     * Update user's last workout date
-     * @param userId The ID of the user
+     * Adds experience points to a user
      */
-    suspend fun updateLastWorkoutDate(userId: Long) {
-        userDao.updateLastWorkoutDate(userId)
+    suspend fun addExp(username: String, amount: Int): Int {
+        return userDao.addExp(username, amount)
     }
     
     /**
-     * Update user's streak
-     * @param userId The ID of the user
-     * @param currentStreak The current streak
+     * Adds strength points to a user
      */
-    suspend fun updateStreak(userId: Long, currentStreak: Int) {
-        userDao.updateStreak(userId, currentStreak)
+    suspend fun addStrength(username: String, amount: Int): Int {
+        return userDao.addStrength(username, amount)
     }
     
     /**
-     * Update user's rank
-     * @param userId The ID of the user
-     * @param newRank The new rank
+     * Adds endurance points to a user
      */
-    suspend fun updateRank(userId: Long, newRank: String) {
-        userDao.updateRank(userId, newRank)
+    suspend fun addEndurance(username: String, amount: Int): Int {
+        return userDao.addEndurance(username, amount)
+    }
+    
+    /**
+     * Adds agility points to a user
+     */
+    suspend fun addAgility(username: String, amount: Int): Int {
+        return userDao.addAgility(username, amount)
+    }
+    
+    /**
+     * Adds vitality points to a user
+     */
+    suspend fun addVitality(username: String, amount: Int): Int {
+        return userDao.addVitality(username, amount)
+    }
+    
+    /**
+     * Adds intelligence points to a user
+     */
+    suspend fun addIntelligence(username: String, amount: Int): Int {
+        return userDao.addIntelligence(username, amount)
+    }
+    
+    /**
+     * Adds luck points to a user
+     */
+    suspend fun addLuck(username: String, amount: Int): Int {
+        return userDao.addLuck(username, amount)
+    }
+    
+    /**
+     * Adds trophy points to a user
+     */
+    suspend fun addTrophyPoints(username: String, amount: Int): Int {
+        return userDao.addTrophyPoints(username, amount)
+    }
+    
+    /**
+     * Increments a user's streak
+     */
+    suspend fun incrementStreak(username: String): Int {
+        return userDao.incrementStreak(username)
+    }
+    
+    /**
+     * Resets a user's streak
+     */
+    suspend fun resetStreak(username: String): Int {
+        return userDao.resetStreak(username)
+    }
+    
+    /**
+     * Increments a user's workout count
+     */
+    suspend fun incrementWorkoutCount(username: String): Int {
+        return userDao.incrementWorkoutCount(username)
+    }
+    
+    /**
+     * Adds workout minutes to a user's total
+     */
+    suspend fun addWorkoutMinutes(username: String, minutes: Int): Int {
+        return userDao.addWorkoutMinutes(username, minutes)
+    }
+    
+    /**
+     * Adds calories burned to a user's total
+     */
+    suspend fun addCaloriesBurned(username: String, calories: Int): Int {
+        return userDao.addCaloriesBurned(username, calories)
+    }
+    
+    /**
+     * Updates a user's level and experience
+     */
+    suspend fun updateLevelAndExp(username: String, level: Int, remainingExp: Int, expToNextLevel: Int): Int {
+        return userDao.updateLevelAndExp(username, level, remainingExp, expToNextLevel)
+    }
+    
+    /**
+     * Updates a user's rank
+     */
+    suspend fun updateRank(username: String, rank: Rank): Int {
+        return userDao.updateRank(username, rank)
+    }
+    
+    /**
+     * Marks a user as ready for rank up
+     */
+    suspend fun markReadyForRankUp(username: String): Int {
+        return userDao.markReadyForRankUp(username)
+    }
+    
+    /**
+     * Marks a user's rank up quest as completed
+     */
+    suspend fun markRankUpQuestCompleted(username: String): Int {
+        return userDao.markRankUpQuestCompleted(username)
+    }
+    
+    /**
+     * Resets a user's daily experience
+     */
+    suspend fun resetDailyExp(username: String): Int {
+        return userDao.resetDailyExp(username)
+    }
+    
+    /**
+     * Marks a user as having worked out today
+     */
+    suspend fun markWorkoutCompleted(username: String): Int {
+        return userDao.markWorkoutCompleted(username)
+    }
+    
+    /**
+     * Resets all users' daily workout flags
+     */
+    suspend fun resetDailyWorkoutFlags(): Int {
+        return userDao.resetDailyWorkoutFlags()
+    }
+    
+    /**
+     * Gets the count of all users
+     */
+    suspend fun getUserCount(): Int {
+        return userDao.getUserCount()
+    }
+    
+    /**
+     * Updates a user's password
+     */
+    suspend fun updatePassword(username: String, newPassword: String): Int {
+        val passwordHash = hashPassword(newPassword)
+        return userDao.updatePassword(username, passwordHash)
+    }
+    
+    /**
+     * Hashes a password for secure storage
+     */
+    private fun hashPassword(password: String): String {
+        val bytes = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 }

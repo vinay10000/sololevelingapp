@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.huntersascension.data.dao.*
+import com.huntersascension.data.dao.social.*
 import com.huntersascension.data.model.*
+import com.huntersascension.data.model.social.*
 import com.huntersascension.data.util.Converters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +26,14 @@ import kotlinx.coroutines.launch
         Achievement::class,
         Ability::class,
         UserAbility::class,
-        Quest::class
+        Quest::class,
+        // Social and leaderboard entities
+        FriendRelation::class,
+        SocialShare::class,
+        SocialLike::class,
+        SocialComment::class,
+        Leaderboard::class,
+        LeaderboardEntry::class
     ],
     version = 1,
     exportSchema = false
@@ -42,6 +51,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun achievementDao(): AchievementDao
     abstract fun abilityDao(): AbilityDao
     abstract fun questDao(): QuestDao
+    
+    // Social and leaderboard DAOs
+    abstract fun friendDao(): FriendDao
+    abstract fun socialDao(): SocialDao
+    abstract fun leaderboardDao(): LeaderboardDao
     
     companion object {
         // Singleton instance
@@ -92,6 +106,35 @@ abstract class AppDatabase : RoomDatabase() {
             
             // Add sample workouts (optional)
             database.workoutDao().insertWorkouts(getSampleWorkouts())
+            
+            // Create default leaderboards
+            createDefaultLeaderboards(database)
+        }
+        
+        /**
+         * Creates default leaderboards
+         */
+        private suspend fun createDefaultLeaderboards(database: AppDatabase) {
+            val leaderboardDao = database.leaderboardDao()
+            
+            // Create global leaderboards
+            leaderboardDao.createOrUpdateTotalExpLeaderboard()
+            leaderboardDao.createOrUpdateWeeklyExpLeaderboard()
+            leaderboardDao.createOrUpdateStreakLeaderboard()
+            
+            // Create stat leaderboards
+            leaderboardDao.createOrUpdateStatLeaderboard(LeaderboardType.STRENGTH)
+            leaderboardDao.createOrUpdateStatLeaderboard(LeaderboardType.ENDURANCE)
+            leaderboardDao.createOrUpdateStatLeaderboard(LeaderboardType.AGILITY)
+            leaderboardDao.createOrUpdateStatLeaderboard(LeaderboardType.VITALITY)
+            
+            // Create rank-specific leaderboards
+            leaderboardDao.createOrUpdateRankSpecificLeaderboard(Rank.E)
+            leaderboardDao.createOrUpdateRankSpecificLeaderboard(Rank.D)
+            leaderboardDao.createOrUpdateRankSpecificLeaderboard(Rank.C)
+            leaderboardDao.createOrUpdateRankSpecificLeaderboard(Rank.B)
+            leaderboardDao.createOrUpdateRankSpecificLeaderboard(Rank.A)
+            leaderboardDao.createOrUpdateRankSpecificLeaderboard(Rank.S)
         }
         
         /**

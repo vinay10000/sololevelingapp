@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.huntersascension.data.model.*
+import com.huntersascension.data.model.social.*
 import java.util.*
 
 /**
@@ -131,6 +132,47 @@ class Converters {
 
     @TypeConverter
     fun toQuestType(value: String): QuestType {
+        return enumValueOf(value)
+    }
+
+    // Social and leaderboard enum converters
+    @TypeConverter
+    fun fromFriendRequestStatus(status: FriendRequestStatus): String {
+        return status.name
+    }
+
+    @TypeConverter
+    fun toFriendRequestStatus(value: String): FriendRequestStatus {
+        return enumValueOf(value)
+    }
+
+    @TypeConverter
+    fun fromSharedContentType(type: SharedContentType): String {
+        return type.name
+    }
+
+    @TypeConverter
+    fun toSharedContentType(value: String): SharedContentType {
+        return enumValueOf(value)
+    }
+
+    @TypeConverter
+    fun fromLeaderboardType(type: LeaderboardType): String {
+        return type.name
+    }
+
+    @TypeConverter
+    fun toLeaderboardType(value: String): LeaderboardType {
+        return enumValueOf(value)
+    }
+
+    @TypeConverter
+    fun fromLeaderboardScope(scope: LeaderboardScope): String {
+        return scope.name
+    }
+
+    @TypeConverter
+    fun toLeaderboardScope(value: String): LeaderboardScope {
         return enumValueOf(value)
     }
 

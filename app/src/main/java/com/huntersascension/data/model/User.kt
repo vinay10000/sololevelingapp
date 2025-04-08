@@ -135,7 +135,7 @@ data class User(
             Rank.E -> 500
             Rank.D -> 750
             Rank.C -> 1000
-            Rank.D -> 1500
+            Rank.B -> 1500  // Fixed from D to B
             Rank.A -> 2000
             Rank.S -> 3000
         }
