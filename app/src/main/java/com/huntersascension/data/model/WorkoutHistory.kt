@@ -1,106 +1,121 @@
 package com.huntersascension.data.model
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.util.*
+import androidx.room.TypeConverters
+import com.huntersascension.data.converters.DateConverter
+import java.util.Date
+import java.util.UUID
 
 /**
- * Entity representing a completed workout
+ * WorkoutHistory entity that represents a completed workout session
  */
-@Entity(
-    tableName = "workout_history",
-    foreignKeys = [
-        ForeignKey(
-            entity = User::class,
-            parentColumns = ["id"],
-            childColumns = ["userId"],
-            onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = Workout::class,
-            parentColumns = ["id"],
-            childColumns = ["workoutId"],
-            onDelete = ForeignKey.SET_NULL
-        )
-    ],
-    indices = [
-        Index("userId"),
-        Index("workoutId")
-    ]
-)
+@Entity(tableName = "workout_history")
+@TypeConverters(DateConverter::class)
 data class WorkoutHistory(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
+    val historyId: String = UUID.randomUUID().toString(),
     
-    /**
-     * ID of the user who completed the workout
-     */
-    val userId: Long,
+    // Reference to workout and user
+    val workoutId: String,
+    val username: String,
     
-    /**
-     * ID of the workout that was completed (can be null if workout was deleted)
-     */
-    val workoutId: Long,
-    
-    /**
-     * Name of the workout (stored separately in case workout is deleted)
-     */
-    val workoutName: String,
-    
-    /**
-     * Type of the workout
-     */
-    val workoutType: String,
-    
-    /**
-     * When the workout was started
-     */
+    // Session details
     val startTime: Date,
+    val endTime: Date? = null,
+    val totalDuration: Int = 0, // in seconds
+    val caloriesBurned: Int = 0,
+    val expEarned: Int = 0,
+    
+    // Performance metrics
+    val intensity: WorkoutIntensity = WorkoutIntensity.NORMAL,
+    val completionPercentage: Float = 100f,
+    val userRating: Int? = null, // 1-5 stars
+    val userNotes: String? = null,
+    
+    // Stat gains
+    val strengthGain: Int = 0,
+    val enduranceGain: Int = 0,
+    val agilityGain: Int = 0,
+    val vitalityGain: Int = 0,
+    val intelligenceGain: Int = 0,
+    val luckGain: Int = 0,
+    
+    // Flags
+    val isCompleted: Boolean = false,
+    val wasStreakDay: Boolean = false
+) {
+    /**
+     * Returns true if the workout is currently in progress
+     */
+    val isInProgress: Boolean
+        get() = startTime != null && endTime == null
     
     /**
-     * When the workout was completed
+     * Returns the total time in minutes
      */
-    val endTime: Date,
+    val durationMinutes: Int
+        get() = totalDuration / 60
     
     /**
-     * Duration of the workout in minutes
+     * Returns the formatted duration string (e.g., "45m 30s")
      */
-    val durationMinutes: Int,
+    fun getFormattedDuration(): String {
+        val minutes = totalDuration / 60
+        val seconds = totalDuration % 60
+        return "${minutes}m ${seconds}s"
+    }
     
     /**
-     * Number of exercises completed
+     * Returns the total stat gain from this workout
      */
-    val exercisesCompleted: Int,
+    val totalStatGain: Int
+        get() = strengthGain + enduranceGain + agilityGain + vitalityGain + intelligenceGain + luckGain
+}
+
+/**
+ * ExerciseHistory entity that represents a completed exercise within a workout
+ */
+@Entity(tableName = "exercise_history")
+data class ExerciseHistory(
+    @PrimaryKey
+    val exerciseHistoryId: String = UUID.randomUUID().toString(),
     
-    /**
-     * Estimated calories burned
-     */
-    val caloriesBurned: Int,
+    // Reference to workout history and exercise
+    val historyId: String,
+    val exerciseId: String,
     
-    /**
-     * XP earned from the workout
-     */
-    val xpEarned: Int,
+    // Performance details
+    val setsCompleted: Int = 0,
+    val totalReps: Int = 0,
+    val maxWeight: Float? = null,
+    val totalWeight: Float? = null, // Volume (reps * weight)
+    val duration: Int? = null, // in seconds
+    val distance: Float? = null, // in meters
     
-    /**
-     * Primary stat points gained
-     */
-    val primaryStatGained: Int,
-    
-    /**
-     * Secondary stat points gained
-     */
-    val secondaryStatGained: Int,
-    
-    /**
-     * User notes added after the workout
-     */
-    val notes: String? = null,
-    
-    /**
-     * User rating of the workout (1-5)
-     */
-    val userRating: Int? = null
+    // User feedback
+    val difficultyRating: Int? = null, // 1-5 scale
+    val notes: String? = null
 )
+
+/**
+ * Defines workout intensity levels
+ */
+enum class WorkoutIntensity {
+    LIGHT,
+    NORMAL,
+    INTENSE,
+    MAXIMUM;
+    
+    /**
+     * Returns the experience multiplier for this intensity
+     */
+    fun getExpMultiplier(): Float {
+        return when (this) {
+            LIGHT -> 0.8f
+            NORMAL -> 1.0f
+            INTENSE -> 1.25f
+            MAXIMUM -> 1.5f
+        }
+    }
+}

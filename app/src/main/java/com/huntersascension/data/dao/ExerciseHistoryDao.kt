@@ -5,123 +5,51 @@ import androidx.room.*
 import com.huntersascension.data.model.ExerciseHistory
 
 /**
- * Data Access Object for ExerciseHistory entities
+ * Data Access Object for ExerciseHistory entity
  */
 @Dao
 interface ExerciseHistoryDao {
-    /**
-     * Get all exercise history entries
-     * @return LiveData list of all exercise history entries
-     */
-    @Query("SELECT * FROM exercise_history")
-    fun getAllExerciseHistory(): LiveData<List<ExerciseHistory>>
     
-    /**
-     * Get exercise history for a workout history
-     * @param workoutHistoryId The ID of the workout history
-     * @return LiveData list of exercise history for the workout history
-     */
-    @Query("SELECT * FROM exercise_history WHERE workoutHistoryId = :workoutHistoryId")
-    fun getExerciseHistoryForWorkoutHistory(workoutHistoryId: Long): LiveData<List<ExerciseHistory>>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExerciseHistory(exerciseHistory: ExerciseHistory)
     
-    /**
-     * Get exercise history for an exercise
-     * @param exerciseId The ID of the exercise
-     * @return LiveData list of exercise history for the exercise
-     */
-    @Query("SELECT * FROM exercise_history WHERE exerciseId = :exerciseId ORDER BY id DESC")
-    fun getExerciseHistoryForExercise(exerciseId: Long): LiveData<List<ExerciseHistory>>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExerciseHistoryList(exerciseHistoryList: List<ExerciseHistory>)
     
-    /**
-     * Get exercise history by ID
-     * @param exerciseHistoryId The ID of the exercise history
-     * @return The exercise history with the specified ID, or null if not found
-     */
-    @Query("SELECT * FROM exercise_history WHERE id = :exerciseHistoryId")
-    suspend fun getExerciseHistoryById(exerciseHistoryId: Long): ExerciseHistory?
-    
-    /**
-     * Insert a new exercise history entry
-     * @param exerciseHistory The exercise history to insert
-     * @return The ID of the inserted exercise history
-     */
-    @Insert
-    suspend fun insertExerciseHistory(exerciseHistory: ExerciseHistory): Long
-    
-    /**
-     * Insert multiple exercise history entries
-     * @param exerciseHistories The exercise history entries to insert
-     * @return The IDs of the inserted exercise history entries
-     */
-    @Insert
-    suspend fun insertAllExerciseHistories(exerciseHistories: List<ExerciseHistory>): List<Long>
-    
-    /**
-     * Update an existing exercise history entry
-     * @param exerciseHistory The exercise history to update
-     */
     @Update
     suspend fun updateExerciseHistory(exerciseHistory: ExerciseHistory)
     
-    /**
-     * Delete an exercise history entry
-     * @param exerciseHistory The exercise history to delete
-     */
     @Delete
     suspend fun deleteExerciseHistory(exerciseHistory: ExerciseHistory)
     
-    /**
-     * Delete all exercise history entries for a workout history
-     * @param workoutHistoryId The ID of the workout history
-     */
-    @Query("DELETE FROM exercise_history WHERE workoutHistoryId = :workoutHistoryId")
-    suspend fun deleteExerciseHistoryForWorkoutHistory(workoutHistoryId: Long)
+    @Query("SELECT * FROM exercise_history WHERE historyId = :historyId ORDER BY exerciseId, setNumber")
+    fun getExerciseHistoryForWorkout(historyId: String): LiveData<List<ExerciseHistory>>
     
-    /**
-     * Get total XP earned for an exercise
-     * @param exerciseId The ID of the exercise
-     * @return Total XP earned
-     */
-    @Query("SELECT SUM(xpEarned) FROM exercise_history WHERE exerciseId = :exerciseId")
-    suspend fun getTotalXpForExercise(exerciseId: Long): Int?
+    @Query("SELECT * FROM exercise_history WHERE historyId = :historyId AND exerciseId = :exerciseId ORDER BY setNumber")
+    fun getExerciseHistoryForExercise(historyId: String, exerciseId: String): LiveData<List<ExerciseHistory>>
     
-    /**
-     * Get total calories burned for an exercise
-     * @param exerciseId The ID of the exercise
-     * @return Total calories burned
-     */
-    @Query("SELECT SUM(caloriesBurned) FROM exercise_history WHERE exerciseId = :exerciseId")
-    suspend fun getTotalCaloriesForExercise(exerciseId: Long): Int?
+    @Query("UPDATE exercise_history SET reps = :reps, weight = :weight, duration = :duration, distance = :distance, isCompleted = 1 WHERE historyId = :historyId AND exerciseId = :exerciseId AND setNumber = :setNumber")
+    suspend fun updateExerciseSet(historyId: String, exerciseId: String, setNumber: Int, reps: Int?, weight: Float?, duration: Int?, distance: Float?)
     
-    /**
-     * Get total sets completed for an exercise
-     * @param exerciseId The ID of the exercise
-     * @return Total sets completed
-     */
-    @Query("SELECT SUM(setsCompleted) FROM exercise_history WHERE exerciseId = :exerciseId")
-    suspend fun getTotalSetsForExercise(exerciseId: Long): Int?
+    @Query("SELECT COUNT(*) FROM exercise_history WHERE historyId = :historyId AND isCompleted = 1")
+    suspend fun getCompletedExerciseCount(historyId: String): Int
     
-    /**
-     * Get max weight used for an exercise
-     * @param exerciseId The ID of the exercise
-     * @return Max weight used
-     */
-    @Query("SELECT MAX(weightUsed) FROM exercise_history WHERE exerciseId = :exerciseId AND weightUsed IS NOT NULL")
-    suspend fun getMaxWeightForExercise(exerciseId: Long): Float?
+    @Query("SELECT COUNT(*) FROM exercise_history WHERE historyId = :historyId")
+    suspend fun getTotalExerciseCount(historyId: String): Int
     
-    /**
-     * Get max distance for an exercise
-     * @param exerciseId The ID of the exercise
-     * @return Max distance
-     */
-    @Query("SELECT MAX(distanceKm) FROM exercise_history WHERE exerciseId = :exerciseId AND distanceKm IS NOT NULL")
-    suspend fun getMaxDistanceForExercise(exerciseId: Long): Float?
+    @Query("DELETE FROM exercise_history WHERE historyId = :historyId")
+    suspend fun deleteExerciseHistoryForWorkout(historyId: String)
     
-    /**
-     * Get max duration for an exercise
-     * @param exerciseId The ID of the exercise
-     * @return Max duration
-     */
-    @Query("SELECT MAX(durationMinutes) FROM exercise_history WHERE exerciseId = :exerciseId AND durationMinutes IS NOT NULL")
-    suspend fun getMaxDurationForExercise(exerciseId: Long): Int?
+    // Queries for progress tracking
+    @Query("SELECT MAX(weight) FROM exercise_history WHERE exerciseId = :exerciseId AND weight IS NOT NULL AND isCompleted = 1")
+    fun getMaxWeightForExercise(exerciseId: String): LiveData<Float?>
+    
+    @Query("SELECT MAX(reps) FROM exercise_history WHERE exerciseId = :exerciseId AND reps IS NOT NULL AND isCompleted = 1")
+    fun getMaxRepsForExercise(exerciseId: String): LiveData<Int?>
+    
+    @Query("SELECT MIN(duration) FROM exercise_history WHERE exerciseId = :exerciseId AND duration IS NOT NULL AND isCompleted = 1")
+    fun getMinDurationForExercise(exerciseId: String): LiveData<Int?>
+    
+    @Query("SELECT MAX(distance) FROM exercise_history WHERE exerciseId = :exerciseId AND distance IS NOT NULL AND isCompleted = 1")
+    fun getMaxDistanceForExercise(exerciseId: String): LiveData<Float?>
 }

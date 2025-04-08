@@ -2,90 +2,135 @@ package com.huntersascension.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.util.*
 
 /**
- * Entity representing an exercise
+ * Enum representing exercise categories
+ */
+enum class ExerciseCategory {
+    STRENGTH, CARDIO, FLEXIBILITY, BALANCE, MOBILITY, PLYOMETRIC, HIIT;
+    
+    companion object {
+        fun getPrimaryStat(category: ExerciseCategory): Stat {
+            return when (category) {
+                STRENGTH -> Stat.STRENGTH
+                CARDIO -> Stat.ENDURANCE
+                FLEXIBILITY -> Stat.AGILITY
+                BALANCE -> Stat.AGILITY
+                MOBILITY -> Stat.VITALITY
+                PLYOMETRIC -> Stat.STRENGTH
+                HIIT -> Stat.VITALITY
+            }
+        }
+    }
+}
+
+/**
+ * Enum representing exercise types
+ */
+enum class ExerciseType {
+    REPETITION_BASED, // Counted in reps
+    TIME_BASED, // Counted in seconds
+    DISTANCE_BASED, // Counted in meters/kilometers
+    WEIGHT_BASED, // Focus on weight lifted
+    COMBINED // Multiple metrics
+}
+
+/**
+ * Enum representing muscle groups
+ */
+enum class MuscleGroup {
+    CHEST, BACK, SHOULDERS, BICEPS, TRICEPS, FOREARMS, 
+    QUADRICEPS, HAMSTRINGS, CALVES, GLUTES, 
+    ABS, OBLIQUES, LOWER_BACK,
+    FULL_BODY, UPPER_BODY, LOWER_BODY, CORE
+}
+
+/**
+ * Exercise entity representing a single exercise
  */
 @Entity(tableName = "exercises")
 data class Exercise(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
+    val exerciseId: String = UUID.randomUUID().toString(),
     
-    /**
-     * Name of the exercise
-     */
+    // Basic info
     val name: String,
+    val description: String,
+    val instructions: String, // How to perform the exercise
+    val category: ExerciseCategory,
+    val type: ExerciseType,
     
-    /**
-     * Description of the exercise
-     */
-    val description: String? = null,
+    // Muscle groups worked
+    val primaryMuscle: MuscleGroup,
+    val secondaryMuscles: List<MuscleGroup> = emptyList(),
     
-    /**
-     * Type of exercise (Strength, Cardio, Flexibility, etc.)
-     */
-    val type: String,
+    // Stats affected
+    val primaryStat: Stat,
+    val secondaryStat: Stat? = null,
     
-    /**
-     * Primary stat this exercise improves (Strength, Endurance, Agility, Vitality)
-     */
-    val primaryStat: String,
+    // Difficulty
+    val difficulty: Int, // 1-5 scale
     
-    /**
-     * Secondary stat this exercise improves (can be null)
-     */
-    val secondaryStat: String? = null,
-    
-    /**
-     * Muscle group targeted (Chest, Back, Legs, etc.)
-     */
-    val muscleGroup: String? = null,
-    
-    /**
-     * Equipment needed for the exercise (can be null for bodyweight exercises)
-     */
-    val equipment: String? = null,
-    
-    /**
-     * Difficulty level (1-5)
-     */
-    val difficulty: Int = 3,
-    
-    /**
-     * Whether it's a compound exercise (works multiple muscle groups)
-     */
-    val isCompound: Boolean = false,
-    
-    /**
-     * Whether this is a bodyweight exercise
-     */
-    val isBodyweight: Boolean = false,
-    
-    /**
-     * Estimated calories burned per unit
-     * For strength: per rep
-     * For cardio: per minute
-     * For flexibility: per minute of stretch
-     */
-    val caloriesPerUnit: Int? = null,
-    
-    /**
-     * XP earned per set of this exercise
-     */
-    val xpPerSet: Int? = null,
-    
-    /**
-     * URL to video demonstration
-     */
+    // Media
+    val imageUrl: String? = null,
     val videoUrl: String? = null,
     
+    // Requirements
+    val equipment: List<String> = emptyList(),
+    val requiredRank: Rank = Rank.E,
+    
+    // Metrics
+    val defaultSets: Int = 3,
+    val defaultReps: Int? = null,
+    val defaultWeight: Float? = null, // kg
+    val defaultDuration: Int? = null, // seconds
+    val defaultDistance: Float? = null, // meters
+    val defaultRestTime: Int = 60, // seconds
+    
+    // Flags
+    val isLocked: Boolean = false,
+    val isCustom: Boolean = false,
+    val createdBy: String? = null,
+    val createdDate: Date = Date()
+) {
     /**
-     * URL to image demonstration
+     * Gets a display string for the default values
      */
-    val imageUrl: String? = null,
+    fun getDefaultsDisplayString(): String {
+        return when (type) {
+            ExerciseType.REPETITION_BASED -> "$defaultSets sets of $defaultReps reps"
+            ExerciseType.TIME_BASED -> "$defaultSets sets of ${defaultDuration ?: 30} seconds"
+            ExerciseType.DISTANCE_BASED -> "$defaultDistance meters"
+            ExerciseType.WEIGHT_BASED -> "$defaultSets sets of $defaultReps reps at $defaultWeight kg"
+            ExerciseType.COMBINED -> {
+                val parts = mutableListOf<String>()
+                defaultReps?.let { parts.add("$it reps") }
+                defaultDuration?.let { parts.add("$it seconds") }
+                defaultWeight?.let { parts.add("$it kg") }
+                "$defaultSets sets of ${parts.joinToString(", ")}"
+            }
+        }
+    }
     
     /**
-     * Instructions for performing the exercise
+     * Checks if the exercise requires equipment
      */
-    val instructions: String? = null
-)
+    fun requiresEquipment(): Boolean {
+        return equipment.isNotEmpty()
+    }
+    
+    /**
+     * Gets the recommended rest time based on type and difficulty
+     */
+    fun getRecommendedRestTime(): Int {
+        // Higher difficulty and strength exercises typically need more rest
+        return when {
+            category == ExerciseCategory.STRENGTH && difficulty >= 4 -> 90
+            category == ExerciseCategory.STRENGTH -> 60
+            type == ExerciseType.TIME_BASED && difficulty >= 4 -> 45
+            type == ExerciseType.TIME_BASED -> 30
+            else -> defaultRestTime
+        }
+    }
+}

@@ -4,841 +4,623 @@ import android.app.Application
 import androidx.lifecycle.*
 import com.huntersascension.data.AppDatabase
 import com.huntersascension.data.model.*
-import com.huntersascension.data.repository.*
-import com.huntersascension.ui.adapter.UpcomingExerciseItem
-import com.huntersascension.ui.adapter.ExerciseStatus
-import com.huntersascension.ui.adapter.WorkoutExerciseWithDetails
+import com.huntersascension.ui.util.CalculationUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 import kotlin.math.max
-import kotlin.math.roundToInt
+import kotlin.math.min
+import kotlin.random.Random
 
 /**
- * ViewModel for the workout screens
+ * ViewModel for workout-related operations
  */
 class WorkoutViewModel(application: Application) : AndroidViewModel(application) {
     
+    // Database and DAOs
     private val database = AppDatabase.getDatabase(application)
-    private val workoutRepository = WorkoutRepository(database.workoutDao())
-    private val exerciseRepository = ExerciseRepository(database.exerciseDao())
-    private val workoutExerciseRepository = WorkoutExerciseRepository(database.workoutExerciseDao())
-    private val workoutHistoryRepository = WorkoutHistoryRepository(database.workoutHistoryDao())
-    private val exerciseHistoryRepository = ExerciseHistoryRepository(database.exerciseHistoryDao())
-    private val userRepository = UserRepository(database.userDao())
+    private val workoutDao = database.workoutDao()
+    private val exerciseDao = database.exerciseDao()
+    private val workoutExerciseDao = database.workoutExerciseDao()
+    private val workoutHistoryDao = database.workoutHistoryDao()
+    private val exerciseHistoryDao = database.exerciseHistoryDao()
+    private val userDao = database.userDao()
+    private val questDao = database.questDao()
     
     // LiveData for workouts
-    private val _userWorkouts = MutableLiveData<List<Workout>>()
-    val userWorkouts: LiveData<List<Workout>> = _userWorkouts
+    val workouts: LiveData<List<Workout>> = workoutDao.getWorkoutsByUser(getCurrentUsername())
+    val favoriteWorkouts: LiveData<List<Workout>> = workoutDao.getFavoriteWorkouts(getCurrentUsername())
     
-    // LiveData for filtered workouts
-    private val _filteredWorkouts = MutableLiveData<List<Workout>>()
-    val filteredWorkouts: LiveData<List<Workout>> = _filteredWorkouts
+    // Current workout data
+    private val _currentWorkout = MutableLiveData<Workout>()
+    val currentWorkout: LiveData<Workout> = _currentWorkout
     
-    // Currently selected filter
-    private var currentFilter: String = "All"
+    private val _workoutExercises = MutableLiveData<List<WorkoutExercise>>()
+    val workoutExercises: LiveData<List<WorkoutExercise>> = _workoutExercises
     
-    // LiveData for workout exercises
-    private val _workoutExercises = MutableLiveData<List<WorkoutExerciseWithDetails>>()
-    val workoutExercises: LiveData<List<WorkoutExerciseWithDetails>> = _workoutExercises
+    // Workout creation data
+    private val _newWorkout = MutableLiveData<Workout>()
+    val newWorkout: LiveData<Workout> = _newWorkout
     
-    // LiveData for workout history
-    private val _recentWorkouts = MutableLiveData<List<WorkoutHistory>>()
-    val recentWorkouts: LiveData<List<WorkoutHistory>> = _recentWorkouts
+    private val _newWorkoutExercises = MutableLiveData<MutableList<WorkoutExercise>>(mutableListOf())
+    val newWorkoutExercises: LiveData<MutableList<WorkoutExercise>> = _newWorkoutExercises
     
-    // LiveData for workout statistics
-    private val _workoutStats = MutableLiveData<WorkoutStats>()
-    val workoutStats: LiveData<WorkoutStats> = _workoutStats
+    // Workout history
+    val recentWorkoutHistory = workoutHistoryDao.getRecentWorkoutHistoryForUser(getCurrentUsername(), 5)
     
-    // LiveData for active workout
-    private val _activeWorkout = MutableLiveData<Workout?>()
-    val activeWorkout: LiveData<Workout?> = _activeWorkout
+    // Current active workout session
+    private val _activeWorkoutHistory = MutableLiveData<WorkoutHistory>()
+    val activeWorkoutHistory: LiveData<WorkoutHistory> = _activeWorkoutHistory
     
-    // LiveData for exercises in active workout
-    private val _activeWorkoutExercises = MutableLiveData<List<UpcomingExerciseItem>>()
-    val activeWorkoutExercises: LiveData<List<UpcomingExerciseItem>> = _activeWorkoutExercises
-    
-    // Current active exercise index
-    private val _currentExerciseIndex = MutableLiveData<Int>()
-    val currentExerciseIndex: LiveData<Int> = _currentExerciseIndex
-    
-    // Current set index for active exercise
-    private val _currentSetIndex = MutableLiveData<Int>()
-    val currentSetIndex: LiveData<Int> = _currentSetIndex
-    
-    // Workout timer
-    private val _workoutDuration = MutableLiveData<Long>()
-    val workoutDuration: LiveData<Long> = _workoutDuration
-    
-    // Rest timer
-    private val _restTimeRemaining = MutableLiveData<Int>()
-    val restTimeRemaining: LiveData<Int> = _restTimeRemaining
-    
-    // Is workout paused
-    private val _isWorkoutPaused = MutableLiveData<Boolean>()
-    val isWorkoutPaused: LiveData<Boolean> = _isWorkoutPaused
-    
-    // Is rest timer active
-    private val _isRestActive = MutableLiveData<Boolean>()
-    val isRestActive: LiveData<Boolean> = _isRestActive
+    private val _activeExerciseHistoryList = MutableLiveData<List<ExerciseHistory>>()
+    val activeExerciseHistoryList: LiveData<List<ExerciseHistory>> = _activeExerciseHistoryList
     
     // Workout completion results
     private val _workoutResults = MutableLiveData<WorkoutResults>()
     val workoutResults: LiveData<WorkoutResults> = _workoutResults
     
-    // Loading state
-    private val _isLoading = MutableLiveData<Boolean>()
+    // Loading and error states
+    private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> = _isLoading
     
-    // Error message
-    private val _errorMessage = MutableLiveData<String?>()
-    val errorMessage: LiveData<String?> = _errorMessage
+    private val _errorMessage = MutableLiveData<String>()
+    val errorMessage: LiveData<String> = _errorMessage
     
     /**
-     * Initialize data
+     * Loads a workout by ID and its exercises
      */
-    init {
-        _isLoading.value = false
-        _errorMessage.value = null
-        _isWorkoutPaused.value = false
-        _isRestActive.value = false
-        _currentExerciseIndex.value = 0
-        _currentSetIndex.value = 0
-    }
-    
-    /**
-     * Load user workouts
-     * @param userId The ID of the user
-     */
-    fun loadUserWorkouts(userId: Long) {
+    fun loadWorkout(workoutId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val workouts = withContext(Dispatchers.IO) {
-                    workoutRepository.getWorkoutsForUser(userId).value ?: emptyList()
-                }
-                _userWorkouts.value = workouts
-                _filteredWorkouts.value = workouts
-                _isLoading.value = false
-            } catch (e: Exception) {
-                _errorMessage.value = "Error loading workouts: ${e.message}"
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Filter workouts by type
-     * @param filter The filter to apply (All, Strength, Cardio, Flexibility, Hybrid)
-     */
-    fun filterWorkouts(filter: String) {
-        currentFilter = filter
-        val workouts = _userWorkouts.value ?: emptyList()
-        
-        _filteredWorkouts.value = if (filter == "All") {
-            workouts
-        } else {
-            workouts.filter { it.type == filter }
-        }
-    }
-    
-    /**
-     * Load exercises for a workout
-     * @param workoutId The ID of the workout
-     */
-    fun loadWorkoutExercises(workoutId: Long) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val workoutExerciseList = withContext(Dispatchers.IO) {
-                    workoutExerciseRepository.getExercisesForWorkout(workoutId).value ?: emptyList()
-                }
-                
-                val detailedList = mutableListOf<WorkoutExerciseWithDetails>()
-                
-                for (workoutExercise in workoutExerciseList) {
-                    val exercise = withContext(Dispatchers.IO) {
-                        exerciseRepository.getExerciseById(workoutExercise.exerciseId)
-                    }
-                    
-                    exercise?.let {
-                        detailedList.add(WorkoutExerciseWithDetails(workoutExercise, it))
-                    }
-                }
-                
-                _workoutExercises.value = detailedList.sortedBy { it.workoutExercise.orderIndex }
-                _isLoading.value = false
-            } catch (e: Exception) {
-                _errorMessage.value = "Error loading workout exercises: ${e.message}"
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Load recent workout history
-     * @param userId The ID of the user
-     * @param limit The maximum number of entries to return
-     */
-    fun loadRecentWorkoutHistory(userId: Long, limit: Int = 10) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val history = withContext(Dispatchers.IO) {
-                    workoutHistoryRepository.getRecentWorkoutHistory(userId, limit).value ?: emptyList()
-                }
-                _recentWorkouts.value = history
-                _isLoading.value = false
-            } catch (e: Exception) {
-                _errorMessage.value = "Error loading workout history: ${e.message}"
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Load workout statistics
-     * @param userId The ID of the user
-     */
-    fun loadWorkoutStats(userId: Long) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val user = withContext(Dispatchers.IO) {
-                    userRepository.getUserById(userId)
-                }
-                
-                if (user != null) {
-                    val totalWorkouts = user.totalWorkouts
-                    val totalDuration = user.totalWorkoutMinutes
-                    val totalCalories = user.totalCaloriesBurned
-                    val currentStreak = user.currentStreak
-                    val bestStreak = user.bestStreak
-                    
-                    val avgDuration = if (totalWorkouts > 0) {
-                        totalDuration / totalWorkouts
-                    } else {
-                        0
-                    }
-                    
-                    val workoutTypeCounts = withContext(Dispatchers.IO) {
-                        workoutHistoryRepository.getWorkoutTypeCounts(userId)
-                    }
-                    
-                    _workoutStats.value = WorkoutStats(
-                        totalWorkouts = totalWorkouts,
-                        totalDuration = totalDuration,
-                        avgDuration = avgDuration,
-                        totalCalories = totalCalories,
-                        currentStreak = currentStreak,
-                        bestStreak = bestStreak,
-                        strengthCount = workoutTypeCounts["Strength"] ?: 0,
-                        cardioCount = workoutTypeCounts["Cardio"] ?: 0,
-                        flexibilityCount = workoutTypeCounts["Flexibility"] ?: 0,
-                        hybridCount = workoutTypeCounts["Hybrid"] ?: 0
-                    )
-                }
-                
-                _isLoading.value = false
-            } catch (e: Exception) {
-                _errorMessage.value = "Error loading workout stats: ${e.message}"
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Start a workout
-     * @param workoutId The ID of the workout to start
-     */
-    fun startWorkout(workoutId: Long) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val workout = withContext(Dispatchers.IO) {
-                    workoutRepository.getWorkoutById(workoutId)
-                }
-                
+                val workout = workoutDao.getWorkoutByIdSync(workoutId)
                 if (workout != null) {
-                    _activeWorkout.value = workout
-                    loadActiveWorkoutExercises(workoutId)
-                    
-                    // Initialize workout state
-                    _currentExerciseIndex.value = 0
-                    _currentSetIndex.value = 0
-                    _workoutDuration.value = 0
-                    _isWorkoutPaused.value = false
-                    _isRestActive.value = false
+                    _currentWorkout.value = workout
+                    _workoutExercises.value = workoutExerciseDao.getExercisesForWorkoutSync(workoutId)
                 } else {
                     _errorMessage.value = "Workout not found"
                 }
-                
-                _isLoading.value = false
             } catch (e: Exception) {
-                _errorMessage.value = "Error starting workout: ${e.message}"
+                _errorMessage.value = "Error loading workout: ${e.message}"
+            } finally {
                 _isLoading.value = false
             }
         }
     }
     
     /**
-     * Load exercises for the active workout
-     * @param workoutId The ID of the workout
+     * Creates a new workout
      */
-    private fun loadActiveWorkoutExercises(workoutId: Long) {
+    fun createWorkout(name: String, description: String, type: WorkoutType, difficulty: WorkoutDifficulty, 
+                      primaryStat: Stat, secondaryStat: Stat? = null) {
+        val workout = Workout(
+            name = name,
+            description = description,
+            createdBy = getCurrentUsername(),
+            type = type,
+            difficulty = difficulty,
+            primaryStat = primaryStat,
+            secondaryStat = secondaryStat
+        )
+        _newWorkout.value = workout
+    }
+    
+    /**
+     * Adds an exercise to the new workout being created
+     */
+    fun addExerciseToNewWorkout(exerciseId: String, sets: Int, reps: Int?, weight: Float?, 
+                               duration: Int?, distance: Float?, restTime: Int) {
+        val currentExercises = _newWorkoutExercises.value ?: mutableListOf()
+        val orderIndex = currentExercises.size
+        
+        val workoutExercise = WorkoutExercise(
+            workoutId = _newWorkout.value?.workoutId ?: "",
+            exerciseId = exerciseId,
+            orderIndex = orderIndex,
+            sets = sets,
+            reps = reps,
+            weight = weight,
+            duration = duration,
+            distance = distance,
+            restTime = restTime
+        )
+        
+        currentExercises.add(workoutExercise)
+        _newWorkoutExercises.value = currentExercises
+    }
+    
+    /**
+     * Removes an exercise from the new workout being created
+     */
+    fun removeExerciseFromNewWorkout(position: Int) {
+        val currentExercises = _newWorkoutExercises.value ?: return
+        if (position in currentExercises.indices) {
+            currentExercises.removeAt(position)
+            
+            // Update order indices
+            for (i in position until currentExercises.size) {
+                currentExercises[i] = currentExercises[i].copy(orderIndex = i)
+            }
+            
+            _newWorkoutExercises.value = currentExercises
+        }
+    }
+    
+    /**
+     * Saves the new workout to the database
+     */
+    fun saveNewWorkout(): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                val workoutExerciseList = withContext(Dispatchers.IO) {
-                    workoutExerciseRepository.getExercisesForWorkout(workoutId).value ?: emptyList()
-                }
+                val workout = _newWorkout.value
+                val exercises = _newWorkoutExercises.value
                 
-                val exerciseItems = mutableListOf<UpcomingExerciseItem>()
-                
-                for (workoutExercise in workoutExerciseList) {
-                    val exercise = withContext(Dispatchers.IO) {
-                        exerciseRepository.getExerciseById(workoutExercise.exerciseId)
-                    }
+                if (workout != null && !exercises.isNullOrEmpty()) {
+                    // Insert workout
+                    workoutDao.insertWorkout(workout)
                     
-                    exercise?.let {
-                        exerciseItems.add(
-                            UpcomingExerciseItem(
-                                exercise = it,
-                                workoutExercise = workoutExercise,
-                                status = ExerciseStatus.PENDING
-                            )
-                        )
-                    }
-                }
-                
-                // Sort by order index
-                val sortedItems = exerciseItems.sortedBy { it.workoutExercise.orderIndex }
-                
-                // Mark first exercise as current
-                if (sortedItems.isNotEmpty()) {
-                    val updatedItems = sortedItems.toMutableList()
-                    updatedItems[0] = updatedItems[0].copy(status = ExerciseStatus.CURRENT)
-                    _activeWorkoutExercises.value = updatedItems
+                    // Update exercise workoutIds and insert them
+                    val updatedExercises = exercises.map { it.copy(workoutId = workout.workoutId) }
+                    workoutExerciseDao.insertWorkoutExercises(updatedExercises)
+                    
+                    result.value = true
+                    clearNewWorkoutData()
                 } else {
-                    _activeWorkoutExercises.value = sortedItems
+                    _errorMessage.value = "Invalid workout data"
+                    result.value = false
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Error loading active workout exercises: ${e.message}"
-            }
-        }
-    }
-    
-    /**
-     * Complete the current set
-     */
-    fun completeCurrentSet() {
-        val exerciseItems = _activeWorkoutExercises.value ?: return
-        val currentIndex = _currentExerciseIndex.value ?: 0
-        
-        if (currentIndex >= exerciseItems.size) return
-        
-        val currentExerciseItem = exerciseItems[currentIndex]
-        val currentSetIndex = _currentSetIndex.value ?: 0
-        val totalSets = currentExerciseItem.workoutExercise.sets
-        
-        // If we completed all sets for this exercise
-        if (currentSetIndex + 1 >= totalSets) {
-            // Mark this exercise as completed
-            val updatedItems = exerciseItems.toMutableList()
-            updatedItems[currentIndex] = updatedItems[currentIndex].copy(status = ExerciseStatus.COMPLETED)
-            
-            // Move to next exercise
-            if (currentIndex + 1 < exerciseItems.size) {
-                updatedItems[currentIndex + 1] = updatedItems[currentIndex + 1].copy(status = ExerciseStatus.CURRENT)
-                _activeWorkoutExercises.value = updatedItems
-                _currentExerciseIndex.value = currentIndex + 1
-                _currentSetIndex.value = 0
-            } else {
-                // All exercises completed
-                _activeWorkoutExercises.value = updatedItems
-                _currentExerciseIndex.value = currentIndex
-                _currentSetIndex.value = currentSetIndex + 1
-            }
-        } else {
-            // Move to next set of current exercise
-            _currentSetIndex.value = currentSetIndex + 1
-        }
-    }
-    
-    /**
-     * Move to the previous set
-     */
-    fun previousSet() {
-        val exerciseItems = _activeWorkoutExercises.value ?: return
-        val currentIndex = _currentExerciseIndex.value ?: 0
-        val currentSetIndex = _currentSetIndex.value ?: 0
-        
-        if (currentSetIndex > 0) {
-            // Move to previous set of current exercise
-            _currentSetIndex.value = currentSetIndex - 1
-        } else if (currentIndex > 0) {
-            // Move to previous exercise, last set
-            val prevExercise = exerciseItems[currentIndex - 1]
-            val prevExerciseSets = prevExercise.workoutExercise.sets - 1
-            
-            val updatedItems = exerciseItems.toMutableList()
-            
-            // Update exercise statuses
-            if (prevExercise.status == ExerciseStatus.COMPLETED) {
-                updatedItems[currentIndex - 1] = updatedItems[currentIndex - 1].copy(status = ExerciseStatus.CURRENT)
-            }
-            
-            if (updatedItems[currentIndex].status == ExerciseStatus.CURRENT) {
-                updatedItems[currentIndex] = updatedItems[currentIndex].copy(status = ExerciseStatus.PENDING)
-            }
-            
-            _activeWorkoutExercises.value = updatedItems
-            _currentExerciseIndex.value = currentIndex - 1
-            _currentSetIndex.value = max(0, prevExerciseSets)
-        }
-    }
-    
-    /**
-     * Move to the next set
-     */
-    fun nextSet() {
-        completeCurrentSet()
-    }
-    
-    /**
-     * Toggle workout pause state
-     */
-    fun togglePause() {
-        _isWorkoutPaused.value = !(_isWorkoutPaused.value ?: false)
-    }
-    
-    /**
-     * Start or stop rest timer
-     * @param restDuration Rest duration in seconds
-     */
-    fun toggleRest(restDuration: Int = 60) {
-        val isCurrentlyResting = _isRestActive.value ?: false
-        _isRestActive.value = !isCurrentlyResting
-        
-        if (!isCurrentlyResting) {
-            _restTimeRemaining.value = restDuration
-        }
-    }
-    
-    /**
-     * Decrement rest timer by one second
-     */
-    fun decrementRestTimer() {
-        val currentTime = _restTimeRemaining.value ?: 0
-        if (currentTime > 0) {
-            _restTimeRemaining.value = currentTime - 1
-        } else {
-            _isRestActive.value = false
-        }
-    }
-    
-    /**
-     * Increment workout duration by one second
-     */
-    fun incrementWorkoutDuration() {
-        val currentDuration = _workoutDuration.value ?: 0
-        _workoutDuration.value = currentDuration + 1
-    }
-    
-    /**
-     * Complete the active workout
-     * @param userId The ID of the user
-     */
-    fun completeWorkout(userId: Long) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val workout = _activeWorkout.value
-                val exerciseItems = _activeWorkoutExercises.value
-                
-                if (workout != null && exerciseItems != null) {
-                    // Calculate workout duration in minutes
-                    val durationSeconds = _workoutDuration.value ?: 0
-                    val durationMinutes = (durationSeconds / 60.0).roundToInt()
-                    
-                    // Calculate total calories and XP
-                    var totalCalories = 0
-                    var totalXp = 0
-                    
-                    // Get completed exercises (both CURRENT and COMPLETED status)
-                    val completedExercises = exerciseItems.filter { 
-                        it.status == ExerciseStatus.COMPLETED || it.status == ExerciseStatus.CURRENT 
-                    }
-                    
-                    // Calculate calories and XP based on completed exercises
-                    for (exerciseItem in completedExercises) {
-                        val exercise = exerciseItem.exercise
-                        val workoutExercise = exerciseItem.workoutExercise
-                        
-                        // Calculate calories based on exercise type
-                        val exerciseCalories = when (exercise.type) {
-                            "Cardio" -> {
-                                val duration = workoutExercise.duration ?: 0
-                                // Simplified calorie calculation for cardio
-                                // In a real app, you'd use more factors like user weight
-                                duration * (exercise.caloriesPerUnit ?: 5)
-                            }
-                            else -> {
-                                val sets = workoutExercise.sets
-                                val reps = workoutExercise.reps ?: 0
-                                // Simplified calorie calculation for strength/flexibility
-                                sets * reps * (exercise.caloriesPerUnit ?: 1)
-                            }
-                        }
-                        
-                        // Calculate XP based on exercise difficulty and sets
-                        val exerciseXp = workoutExercise.sets * exercise.difficulty * (exercise.xpPerSet ?: 5)
-                        
-                        totalCalories += exerciseCalories
-                        totalXp += exerciseXp
-                    }
-                    
-                    // Create workout history entry
-                    val workoutHistory = WorkoutHistory(
-                        userId = userId,
-                        workoutId = workout.id,
-                        workoutName = workout.name,
-                        workoutType = workout.type,
-                        startTime = Date(System.currentTimeMillis() - (durationSeconds * 1000)),
-                        endTime = Date(),
-                        durationMinutes = durationMinutes,
-                        exercisesCompleted = completedExercises.size,
-                        caloriesBurned = totalCalories,
-                        xpEarned = totalXp,
-                        primaryStatGained = 3,  // Example values, in real app would depend on workout type
-                        secondaryStatGained = 1
-                    )
-                    
-                    // Insert workout history
-                    val workoutHistoryId = withContext(Dispatchers.IO) {
-                        workoutHistoryRepository.insertWorkoutHistory(workoutHistory)
-                    }
-                    
-                    // Create exercise history entries for completed exercises
-                    val exerciseHistoryEntries = completedExercises.map { exerciseItem ->
-                        val exercise = exerciseItem.exercise
-                        val workoutExercise = exerciseItem.workoutExercise
-                        
-                        // Calculate calories and XP for this exercise
-                        val exerciseCalories = when (exercise.type) {
-                            "Cardio" -> {
-                                val duration = workoutExercise.duration ?: 0
-                                duration * (exercise.caloriesPerUnit ?: 5)
-                            }
-                            else -> {
-                                val sets = workoutExercise.sets
-                                val reps = workoutExercise.reps ?: 0
-                                sets * reps * (exercise.caloriesPerUnit ?: 1)
-                            }
-                        }
-                        
-                        val exerciseXp = workoutExercise.sets * exercise.difficulty * (exercise.xpPerSet ?: 5)
-                        
-                        ExerciseHistory(
-                            workoutHistoryId = workoutHistoryId,
-                            exerciseId = exercise.id,
-                            exerciseName = exercise.name,
-                            exerciseType = exercise.type,
-                            setsCompleted = workoutExercise.sets,
-                            repsPerSet = workoutExercise.reps,
-                            weightUsed = workoutExercise.weight,
-                            wasBodyweight = workoutExercise.isBodyweight,
-                            durationMinutes = workoutExercise.duration,
-                            distanceKm = workoutExercise.distance,
-                            holdTimeSeconds = workoutExercise.holdTime,
-                            caloriesBurned = exerciseCalories,
-                            xpEarned = exerciseXp
-                        )
-                    }
-                    
-                    // Insert exercise history entries
-                    withContext(Dispatchers.IO) {
-                        exerciseHistoryRepository.insertAllExerciseHistories(exerciseHistoryEntries)
-                    }
-                    
-                    // Update user stats (XP, level, streak, workout stats)
-                    // 1. Update XP and check if user leveled up
-                    val leveledUp = withContext(Dispatchers.IO) {
-                        userRepository.addXp(userId, totalXp)
-                    }
-                    
-                    // 2. Update user's stats based on workout type
-                    withContext(Dispatchers.IO) {
-                        userRepository.incrementStat(userId, workout.primaryStat, 3)
-                        
-                        if (workout.secondaryStat != null) {
-                            userRepository.incrementStat(userId, workout.secondaryStat, 1)
-                        }
-                    }
-                    
-                    // 3. Update user's workout stats
-                    withContext(Dispatchers.IO) {
-                        userRepository.updateWorkoutStats(
-                            userId = userId,
-                            workoutsToAdd = 1,
-                            caloriesToAdd = totalCalories,
-                            minutesToAdd = durationMinutes
-                        )
-                    }
-                    
-                    // 4. Update last workout date and streak
-                    withContext(Dispatchers.IO) {
-                        userRepository.updateLastWorkoutDate(userId)
-                        
-                        // Calculate new streak
-                        val newStreak = workoutHistoryRepository.getCurrentStreak(userId)
-                        userRepository.updateStreak(userId, newStreak)
-                    }
-                    
-                    // Get updated user data
-                    val updatedUser = withContext(Dispatchers.IO) {
-                        userRepository.getUserById(userId)
-                    }
-                    
-                    // Set workout results
-                    _workoutResults.value = WorkoutResults(
-                        workoutName = workout.name,
-                        workoutType = workout.type,
-                        durationMinutes = durationMinutes,
-                        exercisesCompleted = completedExercises.size,
-                        caloriesBurned = totalCalories,
-                        xpEarned = totalXp,
-                        primaryStatGained = 3,
-                        secondaryStatGained = if (workout.secondaryStat != null) 1 else 0,
-                        leveledUp = leveledUp,
-                        newLevel = updatedUser?.level ?: 0,
-                        streakUpdated = true,
-                        currentStreak = updatedUser?.currentStreak ?: 0
-                    )
-                    
-                    // Reset active workout
-                    _activeWorkout.value = null
-                    _activeWorkoutExercises.value = emptyList()
-                }
-                
-                _isLoading.value = false
-            } catch (e: Exception) {
-                _errorMessage.value = "Error completing workout: ${e.message}"
+                _errorMessage.value = "Error saving workout: ${e.message}"
+                result.value = false
+            } finally {
                 _isLoading.value = false
             }
         }
-    }
-    
-    /**
-     * Create a new workout
-     * @param workout The workout to create
-     * @return The ID of the created workout
-     */
-    fun createWorkout(workout: Workout): LiveData<Long> {
-        val result = MutableLiveData<Long>()
-        
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val workoutId = withContext(Dispatchers.IO) {
-                    workoutRepository.insertWorkout(workout)
-                }
-                result.value = workoutId
-                _isLoading.value = false
-            } catch (e: Exception) {
-                _errorMessage.value = "Error creating workout: ${e.message}"
-                _isLoading.value = false
-                result.value = -1
-            }
-        }
-        
         return result
     }
     
     /**
-     * Update a workout
-     * @param workout The workout to update
+     * Updates an existing workout
      */
-    fun updateWorkout(workout: Workout) {
+    fun updateWorkout(workout: Workout, exercises: List<WorkoutExercise>): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                withContext(Dispatchers.IO) {
-                    workoutRepository.updateWorkout(workout)
-                }
-                _isLoading.value = false
+                // Update workout with last modified date
+                val updatedWorkout = workout.copy(lastModifiedDate = Date())
+                workoutDao.updateWorkout(updatedWorkout)
+                
+                // Delete existing exercises and insert new ones
+                workoutExerciseDao.deleteAllExercisesForWorkout(workout.workoutId)
+                workoutExerciseDao.insertWorkoutExercises(exercises)
+                
+                result.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Error updating workout: ${e.message}"
+                result.value = false
+            } finally {
                 _isLoading.value = false
             }
         }
-    }
-    
-    /**
-     * Delete a workout
-     * @param workout The workout to delete
-     */
-    fun deleteWorkout(workout: Workout) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                withContext(Dispatchers.IO) {
-                    workoutRepository.deleteWorkout(workout)
-                }
-                _isLoading.value = false
-            } catch (e: Exception) {
-                _errorMessage.value = "Error deleting workout: ${e.message}"
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Add an exercise to a workout
-     * @param workoutId The ID of the workout
-     * @param exerciseId The ID of the exercise
-     * @param workoutExercise The workout exercise parameters
-     * @return The ID of the created workout exercise
-     */
-    fun addExerciseToWorkout(
-        workoutId: Long,
-        exerciseId: Long,
-        workoutExercise: WorkoutExercise
-    ): LiveData<Long> {
-        val result = MutableLiveData<Long>()
-        
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                // Get the current count of exercises in the workout to determine order index
-                val exerciseCount = withContext(Dispatchers.IO) {
-                    workoutExerciseRepository.countExercisesInWorkout(workoutId)
-                }
-                
-                // Create a new workout exercise with the correct workout ID, exercise ID, and order index
-                val newWorkoutExercise = workoutExercise.copy(
-                    workoutId = workoutId,
-                    exerciseId = exerciseId,
-                    orderIndex = exerciseCount
-                )
-                
-                val workoutExerciseId = withContext(Dispatchers.IO) {
-                    workoutExerciseRepository.insertWorkoutExercise(newWorkoutExercise)
-                }
-                
-                result.value = workoutExerciseId
-                _isLoading.value = false
-                
-                // Reload workout exercises
-                loadWorkoutExercises(workoutId)
-            } catch (e: Exception) {
-                _errorMessage.value = "Error adding exercise to workout: ${e.message}"
-                _isLoading.value = false
-                result.value = -1
-            }
-        }
-        
         return result
     }
     
     /**
-     * Update a workout exercise
-     * @param workoutExercise The workout exercise to update
+     * Toggles the favorite status of a workout
      */
-    fun updateWorkoutExercise(workoutExercise: WorkoutExercise) {
+    fun toggleFavorite(workoutId: String) {
         viewModelScope.launch {
-            _isLoading.value = true
             try {
-                withContext(Dispatchers.IO) {
-                    workoutExerciseRepository.updateWorkoutExercise(workoutExercise)
-                }
-                
-                // Reload workout exercises
-                loadWorkoutExercises(workoutExercise.workoutId)
-                
-                _isLoading.value = false
+                val workout = workoutDao.getWorkoutByIdSync(workoutId) ?: return@launch
+                workoutDao.setFavorite(workoutId, !workout.isFavorite)
             } catch (e: Exception) {
-                _errorMessage.value = "Error updating workout exercise: ${e.message}"
-                _isLoading.value = false
+                _errorMessage.value = "Error updating favorite status: ${e.message}"
             }
         }
     }
     
     /**
-     * Remove an exercise from a workout
-     * @param workoutExercise The workout exercise to remove
+     * Deletes a workout
      */
-    fun removeExerciseFromWorkout(workoutExercise: WorkoutExercise) {
+    fun deleteWorkout(workoutId: String): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val workoutId = workoutExercise.workoutId
-                
-                withContext(Dispatchers.IO) {
-                    workoutExerciseRepository.deleteWorkoutExercise(workoutExercise)
-                    
-                    // Reorder remaining exercises
-                    val remainingExercises = workoutExerciseRepository.getExercisesForWorkout(workoutId).value
-                        ?.sortedBy { it.orderIndex } ?: emptyList()
-                    
-                    // Update order indices
-                    remainingExercises.forEachIndexed { index, exercise ->
-                        if (exercise.orderIndex != index) {
-                            workoutExerciseRepository.updateOrderIndex(exercise.id, index)
-                        }
-                    }
+                val workout = workoutDao.getWorkoutByIdSync(workoutId)
+                if (workout != null) {
+                    // Delete workout exercises first
+                    workoutExerciseDao.deleteAllExercisesForWorkout(workoutId)
+                    // Then delete the workout
+                    workoutDao.deleteWorkout(workout)
+                    result.value = true
+                } else {
+                    _errorMessage.value = "Workout not found"
+                    result.value = false
                 }
-                
-                // Reload workout exercises
-                loadWorkoutExercises(workoutId)
-                
-                _isLoading.value = false
             } catch (e: Exception) {
-                _errorMessage.value = "Error removing exercise from workout: ${e.message}"
+                _errorMessage.value = "Error deleting workout: ${e.message}"
+                result.value = false
+            } finally {
                 _isLoading.value = false
             }
+        }
+        return result
+    }
+    
+    /**
+     * Starts a workout session
+     */
+    fun startWorkout(workoutId: String): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val workout = workoutDao.getWorkoutByIdSync(workoutId) ?: throw Exception("Workout not found")
+                val exercises = workoutExerciseDao.getExercisesForWorkoutSync(workoutId)
+                
+                if (exercises.isEmpty()) {
+                    throw Exception("Workout has no exercises")
+                }
+                
+                // Create workout history
+                val workoutHistory = WorkoutHistory(
+                    workoutId = workoutId,
+                    username = getCurrentUsername(),
+                    startTime = Date()
+                )
+                
+                val historyId = workoutHistoryDao.insertWorkoutHistory(workoutHistory).toString()
+                val history = workoutHistoryDao.getWorkoutHistoryByIdSync(historyId) ?: throw Exception("Failed to create workout session")
+                
+                // Create exercise history entries for each exercise
+                val exerciseHistoryList = exercises.map { workoutExercise ->
+                    ExerciseHistory(
+                        historyId = history.historyId,
+                        exerciseId = workoutExercise.exerciseId
+                    )
+                }
+                
+                exerciseHistoryDao.insertExerciseHistoryList(exerciseHistoryList)
+                
+                // Set active workout session
+                _activeWorkoutHistory.value = history
+                _activeExerciseHistoryList.value = exerciseHistoryList
+                
+                result.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Error starting workout: ${e.message}"
+                result.value = false
+            } finally {
+                _isLoading.value = false
+            }
+        }
+        return result
+    }
+    
+    /**
+     * Completes a workout session
+     */
+    fun completeWorkout(intensity: WorkoutIntensity = WorkoutIntensity.NORMAL): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val history = _activeWorkoutHistory.value ?: throw Exception("No active workout")
+                val endTime = Date()
+                
+                // Calculate duration in seconds
+                val durationSeconds = (endTime.time - history.startTime.time) / 1000
+                val durationMinutes = durationSeconds / 60
+                
+                // Get the workout
+                val workout = workoutDao.getWorkoutByIdSync(history.workoutId) ?: throw Exception("Workout not found")
+                
+                // Get the user
+                val user = userDao.getUserByUsernameSync(history.username) ?: throw Exception("User not found")
+                
+                // Calculate calories burned based on workout difficulty and duration
+                val caloriesBurned = calculateCaloriesBurned(workout.difficulty, durationMinutes.toInt())
+                
+                // Calculate exp gained with intensity multiplier
+                val expGained = calculateExpGained(workout, intensity, user)
+                
+                // Calculate stat gains
+                val statGains = calculateStatGains(workout, intensity)
+                
+                // Update workout history with completion data
+                workoutHistoryDao.completeWorkout(
+                    historyId = history.historyId,
+                    endTime = endTime,
+                    duration = durationSeconds.toInt(),
+                    calories = caloriesBurned,
+                    exp = expGained
+                )
+                
+                // Update workout history with stat gains
+                workoutHistoryDao.updateStatGains(
+                    historyId = history.historyId,
+                    str = statGains.strengthGain,
+                    end = statGains.enduranceGain,
+                    agi = statGains.agilityGain,
+                    vit = statGains.vitalityGain,
+                    int = statGains.intelligenceGain,
+                    luck = statGains.luckGain
+                )
+                
+                // Update user stats
+                addExperienceToUser(user.username, expGained)
+                addStatsToUser(user.username, statGains)
+                
+                // Update user workout stats
+                userDao.updateWorkoutStats(
+                    username = user.username,
+                    duration = durationMinutes.toInt(),
+                    calories = caloriesBurned
+                )
+                
+                // Update streak
+                if (!user.hasWorkedOutToday) {
+                    userDao.incrementStreak(user.username)
+                }
+                
+                // Update quests
+                updateQuestsAfterWorkout(workout, durationMinutes.toInt(), caloriesBurned)
+                
+                // Create workout results for display
+                val updatedUser = userDao.getUserByUsernameSync(user.username) ?: user
+                _workoutResults.value = WorkoutResults(
+                    durationMinutes = durationMinutes.toInt(),
+                    caloriesBurned = caloriesBurned,
+                    expGained = expGained,
+                    statGains = statGains,
+                    streakUpdated = !user.hasWorkedOutToday,
+                    newStreak = updatedUser.currentStreak,
+                    leveledUp = updatedUser.level > user.level,
+                    newLevel = if (updatedUser.level > user.level) updatedUser.level else null
+                )
+                
+                // Clear active workout data
+                _activeWorkoutHistory.value = null
+                _activeExerciseHistoryList.value = null
+                
+                result.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Error completing workout: ${e.message}"
+                result.value = false
+            } finally {
+                _isLoading.value = false
+            }
+        }
+        return result
+    }
+    
+    /**
+     * Cancels the current workout session
+     */
+    fun cancelWorkout(): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
+        viewModelScope.launch {
+            try {
+                val history = _activeWorkoutHistory.value ?: throw Exception("No active workout")
+                
+                // Delete workout history and all associated exercise history
+                workoutHistoryDao.deleteWorkoutHistory(history)
+                
+                // Clear active workout data
+                _activeWorkoutHistory.value = null
+                _activeExerciseHistoryList.value = null
+                
+                result.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Error canceling workout: ${e.message}"
+                result.value = false
+            }
+        }
+        return result
+    }
+    
+    /**
+     * Calculates calories burned based on workout difficulty and duration
+     */
+    private fun calculateCaloriesBurned(difficulty: WorkoutDifficulty, durationMinutes: Int): Int {
+        // Base burn rate per minute varies by difficulty
+        val burnRate = when (difficulty) {
+            WorkoutDifficulty.EASY -> 5
+            WorkoutDifficulty.MEDIUM -> 7
+            WorkoutDifficulty.HARD -> 10
+            WorkoutDifficulty.EXTREME -> 12
+        }
+        
+        return burnRate * durationMinutes
+    }
+    
+    /**
+     * Calculates experience points gained from a workout
+     */
+    private fun calculateExpGained(workout: Workout, intensity: WorkoutIntensity, user: User): Int {
+        // Base exp is from the workout
+        var expGained = workout.calculateExpReward(intensity.getExpMultiplier())
+        
+        // Limit to daily exp cap
+        expGained = min(expGained, user.remainingDailyExp)
+        
+        // Update user's remaining daily exp
+        userDao.updateRemainingDailyExp(user.username, user.remainingDailyExp - expGained)
+        
+        return expGained
+    }
+    
+    /**
+     * Calculates stat gains from a workout
+     */
+    private fun calculateStatGains(workout: Workout, intensity: WorkoutIntensity): StatGains {
+        // Base stat gain depends on workout difficulty
+        val baseGain = when (workout.difficulty) {
+            WorkoutDifficulty.EASY -> 1
+            WorkoutDifficulty.MEDIUM -> 2
+            WorkoutDifficulty.HARD -> 3
+            WorkoutDifficulty.EXTREME -> 4
+        }
+        
+        // Apply intensity multiplier
+        val adjustedGain = (baseGain * intensity.getExpMultiplier()).toInt()
+        
+        // Primary stat gets full gain
+        val primaryGain = adjustedGain
+        
+        // Secondary stat gets half gain
+        val secondaryGain = adjustedGain / 2
+        
+        // Small random chance for other stats
+        val otherGain = if (Random.nextFloat() < 0.3f) 1 else 0
+        
+        // Create stat gains based on workout type
+        return when (workout.primaryStat) {
+            Stat.STRENGTH -> StatGains(
+                strengthGain = primaryGain,
+                enduranceGain = if (workout.secondaryStat == Stat.ENDURANCE) secondaryGain else otherGain,
+                agilityGain = if (workout.secondaryStat == Stat.AGILITY) secondaryGain else otherGain,
+                vitalityGain = if (workout.secondaryStat == Stat.VITALITY) secondaryGain else otherGain,
+                intelligenceGain = otherGain,
+                luckGain = if (Random.nextFloat() < 0.1f) 1 else 0
+            )
+            Stat.ENDURANCE -> StatGains(
+                strengthGain = if (workout.secondaryStat == Stat.STRENGTH) secondaryGain else otherGain,
+                enduranceGain = primaryGain,
+                agilityGain = if (workout.secondaryStat == Stat.AGILITY) secondaryGain else otherGain,
+                vitalityGain = if (workout.secondaryStat == Stat.VITALITY) secondaryGain else otherGain,
+                intelligenceGain = otherGain,
+                luckGain = if (Random.nextFloat() < 0.1f) 1 else 0
+            )
+            Stat.AGILITY -> StatGains(
+                strengthGain = if (workout.secondaryStat == Stat.STRENGTH) secondaryGain else otherGain,
+                enduranceGain = if (workout.secondaryStat == Stat.ENDURANCE) secondaryGain else otherGain,
+                agilityGain = primaryGain,
+                vitalityGain = if (workout.secondaryStat == Stat.VITALITY) secondaryGain else otherGain,
+                intelligenceGain = otherGain,
+                luckGain = if (Random.nextFloat() < 0.1f) 1 else 0
+            )
+            Stat.VITALITY -> StatGains(
+                strengthGain = if (workout.secondaryStat == Stat.STRENGTH) secondaryGain else otherGain,
+                enduranceGain = if (workout.secondaryStat == Stat.ENDURANCE) secondaryGain else otherGain,
+                agilityGain = if (workout.secondaryStat == Stat.AGILITY) secondaryGain else otherGain,
+                vitalityGain = primaryGain,
+                intelligenceGain = otherGain,
+                luckGain = if (Random.nextFloat() < 0.1f) 1 else 0
+            )
+            else -> StatGains(
+                strengthGain = otherGain,
+                enduranceGain = otherGain,
+                agilityGain = otherGain,
+                vitalityGain = otherGain,
+                intelligenceGain = primaryGain,
+                luckGain = if (Random.nextFloat() < 0.1f) 1 else 0
+            )
         }
     }
     
     /**
-     * Clear error message
+     * Adds experience to a user and handles level ups
      */
-    fun clearErrorMessage() {
-        _errorMessage.value = null
+    private suspend fun addExperienceToUser(username: String, expAmount: Int) {
+        withContext(Dispatchers.IO) {
+            val user = userDao.getUserByUsernameSync(username) ?: return@withContext
+            
+            // Add exp to user
+            var newExp = user.exp + expAmount
+            var newLevel = user.level
+            var expToNextLevel = user.expToNextLevel
+            
+            // Check for level up
+            while (newExp >= expToNextLevel) {
+                // Level up
+                newExp -= expToNextLevel
+                newLevel++
+                
+                // Calculate new exp required for next level
+                expToNextLevel = CalculationUtils.calculateExpForLevel(newLevel)
+            }
+            
+            // Update user level and exp
+            userDao.updateLevel(username, newLevel, newExp, expToNextLevel)
+        }
     }
+    
+    /**
+     * Adds stats to a user
+     */
+    private suspend fun addStatsToUser(username: String, statGains: StatGains) {
+        withContext(Dispatchers.IO) {
+            if (statGains.strengthGain > 0) userDao.addStrength(username, statGains.strengthGain)
+            if (statGains.enduranceGain > 0) userDao.addEndurance(username, statGains.enduranceGain)
+            if (statGains.agilityGain > 0) userDao.addAgility(username, statGains.agilityGain)
+            if (statGains.vitalityGain > 0) userDao.addVitality(username, statGains.vitalityGain)
+            if (statGains.intelligenceGain > 0) userDao.addIntelligence(username, statGains.intelligenceGain)
+            if (statGains.luckGain > 0) userDao.addLuck(username, statGains.luckGain)
+        }
+    }
+    
+    /**
+     * Updates quest progress after a workout
+     */
+    private suspend fun updateQuestsAfterWorkout(workout: Workout, durationMinutes: Int, caloriesBurned: Int) {
+        withContext(Dispatchers.IO) {
+            // Update workout count quests
+            questDao.updateAllQuestsOfType(QuestType.WORKOUT_COUNT, 1)
+            
+            // Update workout duration quests
+            questDao.updateAllQuestsOfType(QuestType.WORKOUT_DURATION, durationMinutes)
+            
+            // Update calories burned quests
+            questDao.updateAllQuestsOfType(QuestType.CALORIES_BURNED, caloriesBurned)
+        }
+    }
+    
+    /**
+     * Clears data for a new workout
+     */
+    private fun clearNewWorkoutData() {
+        _newWorkout.value = null
+        _newWorkoutExercises.value = mutableListOf()
+    }
+    
+    /**
+     * Gets the current username from shared preferences
+     */
+    private fun getCurrentUsername(): String {
+        // In a real app, this would get the username from shared preferences or a user manager
+        // For simplicity, we'll return a placeholder for now
+        return "testuser" // Placeholder, should be replaced with actual user management
+    }
+    
+    /**
+     * Data class to hold workout result data for display
+     */
+    data class WorkoutResults(
+        val durationMinutes: Int,
+        val caloriesBurned: Int,
+        val expGained: Int,
+        val statGains: StatGains,
+        val streakUpdated: Boolean,
+        val newStreak: Int,
+        val leveledUp: Boolean,
+        val newLevel: Int?
+    )
+    
+    /**
+     * Data class to hold stat gains
+     */
+    data class StatGains(
+        val strengthGain: Int = 0,
+        val enduranceGain: Int = 0,
+        val agilityGain: Int = 0,
+        val vitalityGain: Int = 0,
+        val intelligenceGain: Int = 0,
+        val luckGain: Int = 0
+    )
 }
-
-/**
- * Data class for workout statistics
- */
-data class WorkoutStats(
-    val totalWorkouts: Int = 0,
-    val totalDuration: Int = 0,  // In minutes
-    val avgDuration: Int = 0,    // In minutes
-    val totalCalories: Int = 0,
-    val currentStreak: Int = 0,
-    val bestStreak: Int = 0,
-    val strengthCount: Int = 0,
-    val cardioCount: Int = 0,
-    val flexibilityCount: Int = 0,
-    val hybridCount: Int = 0
-)
-
-/**
- * Data class for workout completion results
- */
-data class WorkoutResults(
-    val workoutName: String,
-    val workoutType: String,
-    val durationMinutes: Int,
-    val exercisesCompleted: Int,
-    val caloriesBurned: Int,
-    val xpEarned: Int,
-    val primaryStatGained: Int,
-    val secondaryStatGained: Int,
-    val leveledUp: Boolean,
-    val newLevel: Int,
-    val streakUpdated: Boolean,
-    val currentStreak: Int,
-    val trophiesEarned: List<String> = emptyList()
-)

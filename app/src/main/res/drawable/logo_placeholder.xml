@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    
+    <!-- Background Circle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M100,100m-90,0a90,90 0,1 1,180 0a90,90 0,1 1,-180 0" />
+    
+    <!-- Sword - Handle -->
+    <path
+        android:fillColor="#512DA8"
+        android:pathData="M95,140L105,140L105,170L95,170Z" />
+    
+    <!-- Sword - Guard -->
+    <path
+        android:fillColor="#FF4081"
+        android:pathData="M75,140L125,140L125,150L75,150Z" />
+    
+    <!-- Sword - Blade -->
+    <path
+        android:fillColor="#6200EA"
+        android:pathData="M90,40L110,40L105,140L95,140Z" />
+    
+    <!-- Shield -->
+    <path
+        android:fillColor="#EEEEEE"
+        android:strokeColor="#512DA8"
+        android:strokeWidth="5"
+        android:pathData="M70,90 A30,30 0 0,1 100,60 A30,30 0 0,1 130,90 L130,120 L100,140 L70,120 Z" />
+    
+    <!-- S Letter (for Solo Leveling) -->
+    <path
+        android:fillColor="#6200EA"
+        android:pathData="M90,95 Q90,90 95,90 L105,90 Q110,90 110,95 L110,100 Q110,105 105,105 L95,105 Q90,105 90,110 L90,115 Q90,120 95,120 L105,120 Q110,120 110,115 M90,90 L110,90 M90,120 L110,120" />
+</vector>

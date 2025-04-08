@@ -2,184 +2,94 @@ package com.huntersascension.data.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import com.huntersascension.data.model.Rank
 import com.huntersascension.data.model.User
 import java.util.*
 
 /**
- * Data Access Object for User entities
+ * Data Access Object for User entity
  */
 @Dao
 interface UserDao {
-    /**
-     * Get all users
-     * @return LiveData list of all users
-     */
-    @Query("SELECT * FROM users ORDER BY username ASC")
-    fun getAllUsers(): LiveData<List<User>>
     
-    /**
-     * Get a user by ID
-     * @param userId The ID of the user
-     * @return The user with the specified ID, or null if not found
-     */
-    @Query("SELECT * FROM users WHERE id = :userId")
-    suspend fun getUserById(userId: Long): User?
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertUser(user: User)
     
-    /**
-     * Get a user by username
-     * @param username The username of the user
-     * @return The user with the specified username, or null if not found
-     */
-    @Query("SELECT * FROM users WHERE username = :username")
-    suspend fun getUserByUsername(username: String): User?
-    
-    /**
-     * Get a user by email
-     * @param email The email of the user
-     * @return The user with the specified email, or null if not found
-     */
-    @Query("SELECT * FROM users WHERE email = :email")
-    suspend fun getUserByEmail(email: String): User?
-    
-    /**
-     * Insert a new user
-     * @param user The user to insert
-     * @return The ID of the inserted user
-     */
-    @Insert
-    suspend fun insertUser(user: User): Long
-    
-    /**
-     * Update an existing user
-     * @param user The user to update
-     */
     @Update
     suspend fun updateUser(user: User)
     
-    /**
-     * Delete a user
-     * @param user The user to delete
-     */
     @Delete
     suspend fun deleteUser(user: User)
     
-    /**
-     * Add XP to a user
-     * @param userId The ID of the user
-     * @param xpToAdd The amount of XP to add
-     * @return True if the user leveled up, false otherwise
-     */
-    @Transaction
-    suspend fun addXpToUser(userId: Long, xpToAdd: Int): Boolean {
-        val user = getUserById(userId) ?: return false
-        
-        var newXp = user.xp + xpToAdd
-        var newLevel = user.level
-        var newXpToNextLevel = user.xpToNextLevel
-        var leveledUp = false
-        
-        // Check if user leveled up
-        while (newXp >= newXpToNextLevel) {
-            newXp -= newXpToNextLevel
-            newLevel++
-            // Increase XP needed for next level by 20%
-            newXpToNextLevel = (newXpToNextLevel * 1.2).toInt()
-            leveledUp = true
-        }
-        
-        // Update user
-        val updatedUser = user.copy(
-            xp = newXp,
-            level = newLevel,
-            xpToNextLevel = newXpToNextLevel
-        )
-        
-        updateUser(updatedUser)
-        
-        return leveledUp
-    }
+    @Query("SELECT * FROM users WHERE username = :username")
+    fun getUserByUsername(username: String): LiveData<User?>
     
-    /**
-     * Increment a user's stat
-     * @param userId The ID of the user
-     * @param statName The name of the stat to increment (Strength, Endurance, Agility, Vitality)
-     * @param amount The amount to increment the stat by
-     */
-    @Transaction
-    suspend fun incrementStat(userId: Long, statName: String, amount: Int) {
-        val user = getUserById(userId) ?: return
-        
-        val updatedUser = when (statName.toLowerCase(Locale.ROOT)) {
-            "strength" -> {
-                user.copy(strengthStat = user.strengthStat + amount)
-            }
-            "endurance" -> {
-                user.copy(enduranceStat = user.enduranceStat + amount)
-            }
-            "agility" -> {
-                user.copy(agilityStat = user.agilityStat + amount)
-            }
-            "vitality" -> {
-                user.copy(vitalityStat = user.vitalityStat + amount)
-            }
-            else -> user
-        }
-        
-        updateUser(updatedUser)
-    }
+    @Query("SELECT * FROM users WHERE username = :username")
+    suspend fun getUserByUsernameSync(username: String): User?
     
-    /**
-     * Update user's workout stats
-     * @param userId The ID of the user
-     * @param workoutsToAdd Number of workouts to add
-     * @param caloriesToAdd Number of calories to add
-     * @param minutesToAdd Number of minutes to add
-     */
-    @Transaction
-    suspend fun updateWorkoutStats(userId: Long, workoutsToAdd: Int, caloriesToAdd: Int, minutesToAdd: Int) {
-        val user = getUserById(userId) ?: return
-        
-        val updatedUser = user.copy(
-            totalWorkouts = user.totalWorkouts + workoutsToAdd,
-            totalCaloriesBurned = user.totalCaloriesBurned + caloriesToAdd,
-            totalWorkoutMinutes = user.totalWorkoutMinutes + minutesToAdd
-        )
-        
-        updateUser(updatedUser)
-    }
+    @Query("SELECT * FROM users WHERE username = :username AND passwordHash = :passwordHash")
+    suspend fun loginUser(username: String, passwordHash: String): User?
     
-    /**
-     * Update user's last workout date
-     * @param userId The ID of the user
-     */
-    @Query("UPDATE users SET lastWorkoutDate = :date WHERE id = :userId")
-    suspend fun updateLastWorkoutDate(userId: Long, date: Date = Date())
+    @Query("SELECT EXISTS(SELECT 1 FROM users WHERE username = :username)")
+    suspend fun usernameExists(username: String): Boolean
     
-    /**
-     * Update user's streak
-     * @param userId The ID of the user
-     * @param currentStreak The current streak
-     */
-    @Transaction
-    suspend fun updateStreak(userId: Long, currentStreak: Int) {
-        val user = getUserById(userId) ?: return
-        
-        // Update best streak if current streak is better
-        val bestStreak = if (currentStreak > user.bestStreak) currentStreak else user.bestStreak
-        
-        val updatedUser = user.copy(
-            currentStreak = currentStreak,
-            bestStreak = bestStreak
-        )
-        
-        updateUser(updatedUser)
-    }
+    @Query("UPDATE users SET level = :level, exp = :exp, expToNextLevel = :expToNextLevel WHERE username = :username")
+    suspend fun updateLevel(username: String, level: Int, exp: Int, expToNextLevel: Int)
     
-    /**
-     * Update user's rank
-     * @param userId The ID of the user
-     * @param newRank The new rank
-     */
-    @Query("UPDATE users SET rank = :newRank WHERE id = :userId")
-    suspend fun updateRank(userId: Long, newRank: String)
+    @Query("UPDATE users SET rank = :rank WHERE username = :username")
+    suspend fun updateRank(username: String, rank: Rank)
+    
+    @Query("UPDATE users SET currentStreak = currentStreak + 1, bestStreak = CASE WHEN currentStreak + 1 > bestStreak THEN currentStreak + 1 ELSE bestStreak END, lastWorkoutDate = :date, hasWorkedOutToday = 1 WHERE username = :username")
+    suspend fun incrementStreak(username: String, date: Date = Date())
+    
+    @Query("UPDATE users SET currentStreak = 0, lastWorkoutDate = NULL, hasWorkedOutToday = 0 WHERE username = :username")
+    suspend fun resetStreak(username: String)
+    
+    @Query("UPDATE users SET strength = strength + :amount WHERE username = :username")
+    suspend fun addStrength(username: String, amount: Int)
+    
+    @Query("UPDATE users SET endurance = endurance + :amount WHERE username = :username")
+    suspend fun addEndurance(username: String, amount: Int)
+    
+    @Query("UPDATE users SET agility = agility + :amount WHERE username = :username")
+    suspend fun addAgility(username: String, amount: Int)
+    
+    @Query("UPDATE users SET vitality = vitality + :amount WHERE username = :username")
+    suspend fun addVitality(username: String, amount: Int)
+    
+    @Query("UPDATE users SET intelligence = intelligence + :amount WHERE username = :username")
+    suspend fun addIntelligence(username: String, amount: Int)
+    
+    @Query("UPDATE users SET luck = luck + :amount WHERE username = :username")
+    suspend fun addLuck(username: String, amount: Int)
+    
+    @Query("UPDATE users SET totalWorkouts = totalWorkouts + 1, totalWorkoutMinutes = totalWorkoutMinutes + :duration, totalCaloriesBurned = totalCaloriesBurned + :calories WHERE username = :username")
+    suspend fun updateWorkoutStats(username: String, duration: Int, calories: Int)
+    
+    @Query("UPDATE users SET canRankUp = :canRankUp WHERE username = :username")
+    suspend fun setCanRankUp(username: String, canRankUp: Boolean)
+    
+    @Query("UPDATE users SET rankUpQuestCompleted = :completed WHERE username = :username")
+    suspend fun setRankUpQuestCompleted(username: String, completed: Boolean)
+    
+    @Query("UPDATE users SET trophyPoints = trophyPoints + :points WHERE username = :username")
+    suspend fun addTrophyPoints(username: String, points: Int)
+    
+    @Query("UPDATE users SET achievementCount = achievementCount + 1 WHERE username = :username")
+    suspend fun incrementAchievementCount(username: String)
+    
+    @Query("UPDATE users SET remainingDailyExp = :amount WHERE username = :username")
+    suspend fun updateRemainingDailyExp(username: String, amount: Int)
+    
+    @Query("UPDATE users SET remainingDailyExp = CASE WHEN rank = 'E' THEN 500 WHEN rank = 'D' THEN 750 WHEN rank = 'C' THEN 1000 WHEN rank = 'B' THEN 1500 WHEN rank = 'A' THEN 2000 ELSE 3000 END, hasWorkedOutToday = 0 WHERE username = :username")
+    suspend fun resetDailyExp(username: String)
+    
+    @Query("SELECT * FROM users ORDER BY level DESC, exp DESC LIMIT :limit")
+    fun getTopUsers(limit: Int): LiveData<List<User>>
+    
+    @Query("SELECT * FROM users ORDER BY currentStreak DESC LIMIT :limit")
+    fun getTopStreakUsers(limit: Int): LiveData<List<User>>
+    
+    @Query("SELECT * FROM users WHERE rank = :rank ORDER BY level DESC, exp DESC LIMIT :limit")
+    fun getTopUsersByRank(rank: Rank, limit: Int): LiveData<List<User>>
 }

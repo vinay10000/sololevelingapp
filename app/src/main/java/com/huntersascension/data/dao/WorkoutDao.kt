@@ -2,96 +2,56 @@ package com.huntersascension.data.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import com.huntersascension.data.model.Rank
 import com.huntersascension.data.model.Workout
+import com.huntersascension.data.model.WorkoutDifficulty
+import com.huntersascension.data.model.WorkoutType
 
 /**
- * Data Access Object for Workout entities
+ * Data Access Object for Workout entity
  */
 @Dao
 interface WorkoutDao {
-    /**
-     * Get all workouts
-     * @return LiveData list of all workouts
-     */
-    @Query("SELECT * FROM workouts ORDER BY name ASC")
-    fun getAllWorkouts(): LiveData<List<Workout>>
     
-    /**
-     * Get workouts for a specific user
-     * @param userId The ID of the user
-     * @return LiveData list of workouts for the user
-     */
-    @Query("SELECT * FROM workouts WHERE userId = :userId ORDER BY name ASC")
-    fun getWorkoutsForUser(userId: Long): LiveData<List<Workout>>
-    
-    /**
-     * Get favorite workouts for a user
-     * @param userId The ID of the user
-     * @return LiveData list of favorite workouts for the user
-     */
-    @Query("SELECT * FROM workouts WHERE userId = :userId AND isFavorite = 1 ORDER BY name ASC")
-    fun getFavoriteWorkoutsForUser(userId: Long): LiveData<List<Workout>>
-    
-    /**
-     * Get a workout by ID
-     * @param workoutId The ID of the workout
-     * @return The workout with the specified ID, or null if not found
-     */
-    @Query("SELECT * FROM workouts WHERE id = :workoutId")
-    suspend fun getWorkoutById(workoutId: Long): Workout?
-    
-    /**
-     * Insert a new workout
-     * @param workout The workout to insert
-     * @return The ID of the inserted workout
-     */
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWorkout(workout: Workout): Long
     
-    /**
-     * Update an existing workout
-     * @param workout The workout to update
-     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWorkouts(workouts: List<Workout>)
+    
     @Update
     suspend fun updateWorkout(workout: Workout)
     
-    /**
-     * Delete a workout
-     * @param workout The workout to delete
-     */
     @Delete
     suspend fun deleteWorkout(workout: Workout)
     
-    /**
-     * Toggle favorite status for a workout
-     * @param workoutId The ID of the workout
-     * @param isFavorite The new favorite status
-     */
-    @Query("UPDATE workouts SET isFavorite = :isFavorite WHERE id = :workoutId")
-    suspend fun setFavoriteStatus(workoutId: Long, isFavorite: Boolean)
+    @Query("SELECT * FROM workouts WHERE workoutId = :workoutId")
+    fun getWorkoutById(workoutId: String): LiveData<Workout?>
     
-    /**
-     * Get workouts by type
-     * @param type The workout type
-     * @return LiveData list of workouts of the specified type
-     */
-    @Query("SELECT * FROM workouts WHERE type = :type ORDER BY name ASC")
-    fun getWorkoutsByType(type: String): LiveData<List<Workout>>
+    @Query("SELECT * FROM workouts WHERE workoutId = :workoutId")
+    suspend fun getWorkoutByIdSync(workoutId: String): Workout?
     
-    /**
-     * Search for workouts by name
-     * @param query The search query
-     * @return LiveData list of workouts matching the query
-     */
-    @Query("SELECT * FROM workouts WHERE name LIKE :query ORDER BY name ASC")
-    fun searchWorkoutsByName(query: String): LiveData<List<Workout>>
+    @Query("SELECT * FROM workouts WHERE createdBy = :username OR isPublic = 1 ORDER BY name")
+    fun getWorkoutsByUser(username: String): LiveData<List<Workout>>
     
-    /**
-     * Get recent workouts for a user
-     * @param userId The ID of the user
-     * @param limit The maximum number of workouts to return
-     * @return LiveData list of recent workouts for the user
-     */
-    @Query("SELECT * FROM workouts WHERE userId = :userId ORDER BY updatedAt DESC LIMIT :limit")
-    fun getRecentWorkoutsForUser(userId: Long, limit: Int): LiveData<List<Workout>>
+    @Query("SELECT * FROM workouts WHERE (createdBy = :username OR isPublic = 1) AND isFavorite = 1 ORDER BY name")
+    fun getFavoriteWorkouts(username: String): LiveData<List<Workout>>
+    
+    @Query("SELECT * FROM workouts WHERE type = :type AND (createdBy = :username OR isPublic = 1) ORDER BY difficulty, name")
+    fun getWorkoutsByType(type: WorkoutType, username: String): LiveData<List<Workout>>
+    
+    @Query("SELECT * FROM workouts WHERE difficulty = :difficulty AND (createdBy = :username OR isPublic = 1) ORDER BY name")
+    fun getWorkoutsByDifficulty(difficulty: WorkoutDifficulty, username: String): LiveData<List<Workout>>
+    
+    @Query("SELECT * FROM workouts WHERE requiredRank <= :rank AND (createdBy = :username OR isPublic = 1) ORDER BY requiredRank, difficulty, name")
+    fun getAvailableWorkoutsForRank(rank: Rank, username: String): LiveData<List<Workout>>
+    
+    @Query("SELECT * FROM workouts WHERE isRecommended = 1 AND requiredRank <= :rank AND (createdBy = :username OR isPublic = 1) ORDER BY requiredRank, difficulty")
+    fun getRecommendedWorkouts(rank: Rank, username: String): LiveData<List<Workout>>
+    
+    @Query("SELECT * FROM workouts WHERE name LIKE '%' || :searchQuery || '%' OR description LIKE '%' || :searchQuery || '%' AND (createdBy = :username OR isPublic = 1) ORDER BY name")
+    fun searchWorkouts(searchQuery: String, username: String): LiveData<List<Workout>>
+    
+    @Query("UPDATE workouts SET isFavorite = :isFavorite WHERE workoutId = :workoutId")
+    suspend fun setFavorite(workoutId: String, isFavorite: Boolean)
 }

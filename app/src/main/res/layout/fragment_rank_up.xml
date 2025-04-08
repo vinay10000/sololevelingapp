@@ -1,85 +1,416 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout 
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="@color/rank_up_background">
+    android:background="@color/backgroundSecondary"
+    android:fillViewport="true">
 
-    <TextView
-        android:id="@+id/rank_up_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="64dp"
-        android:text="@string/rank_up"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:textColor="@color/rank_up_text"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <ImageView
-        android:id="@+id/rank_up_image"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_marginTop="32dp"
-        android:src="@drawable/ic_launcher_foreground"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/rank_up_title" />
-
-    <TextView
-        android:id="@+id/rank_up_message"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="@string/congratulations_you_ve_ranked_up"
-        android:textSize="22sp"
-        android:textColor="@color/rank_up_text"
-        android:textAlignment="center"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/rank_up_image" />
-
-    <TextView
-        android:id="@+id/new_abilities_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="@string/new_abilities_unlocked"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/rank_up_text"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/rank_up_message" />
-
-    <TextView
-        android:id="@+id/new_abilities_description"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/exp_boost_5"
-        android:textColor="@color/rank_up_text"
-        android:textAlignment="center"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/new_abilities_title" />
+        android:padding="16dp">
 
-    <Button
-        android:id="@+id/rank_up_continue"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="64dp"
-        android:padding="16dp"
-        android:text="@string/continue_hunting"
-        android:background="@color/rank_up_button"
-        android:textColor="@android:color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/new_abilities_description" />
+        <!-- Rank Up Header -->
+        <TextView
+            android:id="@+id/text_rank_up_title"
+            style="@style/TextHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/rank_up"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <LinearLayout
+            android:id="@+id/layout_rank_badges"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/text_rank_up_title">
+
+            <TextView
+                android:id="@+id/text_current_rank"
+                style="@style/RankBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rank_badge_background"
+                android:backgroundTint="@color/rankE"
+                android:text="E"
+                android:textSize="24sp" />
+
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:src="@android:drawable/ic_media_play"
+                android:tint="@color/colorPrimary" />
+
+            <TextView
+                android:id="@+id/text_next_rank"
+                style="@style/RankBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rank_badge_background"
+                android:backgroundTint="@color/rankD"
+                android:text="D"
+                android:textSize="24sp" />
+        </LinearLayout>
+
+        <!-- Requirements Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_requirements"
+            style="@style/CardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_rank_badges">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/TextSubheader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/rank_up_requirements" />
+
+                <!-- EXP Requirement -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/required_exp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/text_exp_requirement"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="1000 EXP" />
+
+                        <TextView
+                            android:id="@+id/text_exp_status"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="(750/1000)"
+                            android:textColor="@color/warning" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_exp_requirement"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:layout_marginTop="4dp"
+                        android:progress="75"
+                        android:progressTint="@color/colorPrimary" />
+                </LinearLayout>
+
+                <!-- Strength Requirement -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/strength"
+                            android:textColor="@color/statStrength"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/text_strength_requirement"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="15" />
+
+                        <TextView
+                            android:id="@+id/text_strength_status"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="(10/15)"
+                            android:textColor="@color/warning" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_strength_requirement"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:layout_marginTop="4dp"
+                        android:progress="66"
+                        android:progressTint="@color/statStrength" />
+                </LinearLayout>
+
+                <!-- Endurance Requirement -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/endurance"
+                            android:textColor="@color/statEndurance"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/text_endurance_requirement"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="12" />
+
+                        <TextView
+                            android:id="@+id/text_endurance_status"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="(8/12)"
+                            android:textColor="@color/warning" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_endurance_requirement"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:layout_marginTop="4dp"
+                        android:progress="66"
+                        android:progressTint="@color/statEndurance" />
+                </LinearLayout>
+
+                <!-- Agility Requirement -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/agility"
+                            android:textColor="@color/statAgility"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/text_agility_requirement"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="10" />
+
+                        <TextView
+                            android:id="@+id/text_agility_status"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="(7/10)"
+                            android:textColor="@color/warning" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_agility_requirement"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:layout_marginTop="4dp"
+                        android:progress="70"
+                        android:progressTint="@color/statAgility" />
+                </LinearLayout>
+
+                <!-- Vitality Requirement -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/vitality"
+                            android:textColor="@color/statVitality"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/text_vitality_requirement"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="10" />
+
+                        <TextView
+                            android:id="@+id/text_vitality_status"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="(9/10)"
+                            android:textColor="@color/warning" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_vitality_requirement"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:layout_marginTop="4dp"
+                        android:progress="90"
+                        android:progressTint="@color/statVitality" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Rank Up Quest Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_rank_up_quest"
+            style="@style/CardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/card_requirements">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/TextSubheader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/rank_up_quest" />
+
+                <TextView
+                    android:id="@+id/text_quest_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Complete a special D-Rank workout challenge to prove your worth." />
+
+                <TextView
+                    android:id="@+id/text_quest_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Status: Not Started"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/button_start_quest"
+                    style="@style/ButtonPrimary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/start_challenge" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Reward Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_rewards"
+            style="@style/CardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/card_rank_up_quest">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/TextSubheader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/rank_up_rewards" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler_rewards"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:nestedScrollingEnabled="false" />
+
+                <TextView
+                    android:id="@+id/text_no_rewards"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Complete all requirements to see rewards!"
+                    android:textAlignment="center"
+                    android:textColor="@color/textSecondary"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

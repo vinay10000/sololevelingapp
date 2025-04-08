@@ -2,220 +2,74 @@ package com.huntersascension.data.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import com.huntersascension.data.model.Workout
 import com.huntersascension.data.model.WorkoutHistory
 import java.util.*
 
 /**
- * Data Access Object for WorkoutHistory entities
+ * Data Access Object for WorkoutHistory entity
  */
 @Dao
 interface WorkoutHistoryDao {
-    /**
-     * Get all workout history entries
-     * @return LiveData list of all workout history entries
-     */
-    @Query("SELECT * FROM workout_history ORDER BY startTime DESC")
-    fun getAllWorkoutHistory(): LiveData<List<WorkoutHistory>>
     
-    /**
-     * Get workout history for a user
-     * @param userId The ID of the user
-     * @return LiveData list of workout history for the user
-     */
-    @Query("SELECT * FROM workout_history WHERE userId = :userId ORDER BY startTime DESC")
-    fun getWorkoutHistoryForUser(userId: Long): LiveData<List<WorkoutHistory>>
-    
-    /**
-     * Get recent workout history for a user
-     * @param userId The ID of the user
-     * @param limit The maximum number of entries to return
-     * @return LiveData list of recent workout history for the user
-     */
-    @Query("SELECT * FROM workout_history WHERE userId = :userId ORDER BY startTime DESC LIMIT :limit")
-    fun getRecentWorkoutHistory(userId: Long, limit: Int): LiveData<List<WorkoutHistory>>
-    
-    /**
-     * Get workout history by workout
-     * @param workoutId The ID of the workout
-     * @return LiveData list of workout history for the workout
-     */
-    @Query("SELECT * FROM workout_history WHERE workoutId = :workoutId ORDER BY startTime DESC")
-    fun getWorkoutHistoryByWorkout(workoutId: Long): LiveData<List<WorkoutHistory>>
-    
-    /**
-     * Get workout history by ID
-     * @param workoutHistoryId The ID of the workout history
-     * @return The workout history with the specified ID, or null if not found
-     */
-    @Query("SELECT * FROM workout_history WHERE id = :workoutHistoryId")
-    suspend fun getWorkoutHistoryById(workoutHistoryId: Long): WorkoutHistory?
-    
-    /**
-     * Insert a new workout history entry
-     * @param workoutHistory The workout history to insert
-     * @return The ID of the inserted workout history
-     */
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWorkoutHistory(workoutHistory: WorkoutHistory): Long
     
-    /**
-     * Update an existing workout history entry
-     * @param workoutHistory The workout history to update
-     */
     @Update
     suspend fun updateWorkoutHistory(workoutHistory: WorkoutHistory)
     
-    /**
-     * Delete a workout history entry
-     * @param workoutHistory The workout history to delete
-     */
     @Delete
     suspend fun deleteWorkoutHistory(workoutHistory: WorkoutHistory)
     
-    /**
-     * Get workout history for a date range
-     * @param userId The ID of the user
-     * @param startDate The start date of the range
-     * @param endDate The end date of the range
-     * @return LiveData list of workout history within the date range
-     */
-    @Query("SELECT * FROM workout_history WHERE userId = :userId AND startTime BETWEEN :startDate AND :endDate ORDER BY startTime DESC")
-    fun getWorkoutHistoryForDateRange(userId: Long, startDate: Date, endDate: Date): LiveData<List<WorkoutHistory>>
+    @Query("SELECT * FROM workout_history WHERE historyId = :historyId")
+    fun getWorkoutHistoryById(historyId: String): LiveData<WorkoutHistory?>
     
-    /**
-     * Get total workouts by type for a user
-     * @param userId The ID of the user
-     * @return Map of workout type to count
-     */
-    @Query("SELECT workoutType, COUNT(*) as count FROM workout_history WHERE userId = :userId GROUP BY workoutType")
-    suspend fun getWorkoutTypeCounts(userId: Long): Map<String, Int>
+    @Query("SELECT * FROM workout_history WHERE historyId = :historyId")
+    suspend fun getWorkoutHistoryByIdSync(historyId: String): WorkoutHistory?
     
-    /**
-     * Get total calories burned for a user in a date range
-     * @param userId The ID of the user
-     * @param startDate The start date of the range
-     * @param endDate The end date of the range
-     * @return Total calories burned
-     */
-    @Query("SELECT SUM(caloriesBurned) FROM workout_history WHERE userId = :userId AND startTime BETWEEN :startDate AND :endDate")
-    suspend fun getTotalCaloriesForDateRange(userId: Long, startDate: Date, endDate: Date): Int?
+    @Query("SELECT * FROM workout_history WHERE username = :username ORDER BY startTime DESC")
+    fun getWorkoutHistoryForUser(username: String): LiveData<List<WorkoutHistory>>
     
-    /**
-     * Get total workout duration for a user in a date range
-     * @param userId The ID of the user
-     * @param startDate The start date of the range
-     * @param endDate The end date of the range
-     * @return Total workout duration in minutes
-     */
-    @Query("SELECT SUM(durationMinutes) FROM workout_history WHERE userId = :userId AND startTime BETWEEN :startDate AND :endDate")
-    suspend fun getTotalDurationForDateRange(userId: Long, startDate: Date, endDate: Date): Int?
+    @Query("SELECT * FROM workout_history WHERE username = :username ORDER BY startTime DESC LIMIT :limit")
+    fun getRecentWorkoutHistoryForUser(username: String, limit: Int): LiveData<List<WorkoutHistory>>
     
-    /**
-     * Get total XP earned for a user in a date range
-     * @param userId The ID of the user
-     * @param startDate The start date of the range
-     * @param endDate The end date of the range
-     * @return Total XP earned
-     */
-    @Query("SELECT SUM(xpEarned) FROM workout_history WHERE userId = :userId AND startTime BETWEEN :startDate AND :endDate")
-    suspend fun getTotalXpForDateRange(userId: Long, startDate: Date, endDate: Date): Int?
+    @Query("SELECT * FROM workout_history WHERE workoutId = :workoutId AND username = :username ORDER BY startTime DESC")
+    fun getHistoryForWorkout(workoutId: String, username: String): LiveData<List<WorkoutHistory>>
     
-    /**
-     * Get the current streak for a user
-     * @param userId The ID of the user
-     * @return The current streak
-     */
-    @Transaction
-    suspend fun getCurrentStreak(userId: Long): Int {
-        // Get the most recent workout
-        val recentWorkout = getRecentWorkoutForUser(userId) ?: return 0
-        
-        // Calculate today's date at midnight
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val today = calendar.time
-        
-        // Check if the most recent workout was today or yesterday
-        val recentWorkoutDate = Calendar.getInstance()
-        recentWorkoutDate.time = recentWorkout.startTime
-        recentWorkoutDate.set(Calendar.HOUR_OF_DAY, 0)
-        recentWorkoutDate.set(Calendar.MINUTE, 0)
-        recentWorkoutDate.set(Calendar.SECOND, 0)
-        recentWorkoutDate.set(Calendar.MILLISECOND, 0)
-        
-        val dayDifference = (today.time - recentWorkoutDate.time.time) / (1000 * 60 * 60 * 24)
-        
-        // If the most recent workout was more than a day ago, streak is broken
-        if (dayDifference > 1) {
-            return 0
-        }
-        
-        // Count consecutive days with workouts
-        var streak = 1 // Count the most recent day
-        var currentDate = recentWorkoutDate.time
-        
-        while (true) {
-            // Move to the previous day
-            recentWorkoutDate.add(Calendar.DAY_OF_MONTH, -1)
-            val previousDay = recentWorkoutDate.time
-            
-            // Check if there was a workout on the previous day
-            val hasWorkout = hasWorkoutOnDate(userId, previousDay)
-            
-            if (hasWorkout) {
-                streak++
-                currentDate = previousDay
-            } else {
-                break
-            }
-        }
-        
-        return streak
-    }
+    @Query("SELECT * FROM workout_history wh JOIN workouts w ON wh.workoutId = w.workoutId WHERE wh.username = :username AND w.type = :workoutType ORDER BY wh.startTime DESC")
+    fun getHistoryByWorkoutType(username: String, workoutType: String): LiveData<List<WorkoutHistory>>
     
-    /**
-     * Get the most recent workout for a user
-     * @param userId The ID of the user
-     * @return The most recent workout history, or null if no workouts found
-     */
-    @Query("SELECT * FROM workout_history WHERE userId = :userId ORDER BY startTime DESC LIMIT 1")
-    suspend fun getRecentWorkoutForUser(userId: Long): WorkoutHistory?
+    @Query("SELECT * FROM workout_history WHERE username = :username AND isCompleted = 1 ORDER BY startTime DESC LIMIT 1")
+    suspend fun getLastCompletedWorkout(username: String): WorkoutHistory?
     
-    /**
-     * Check if a user has a workout on a specific date
-     * @param userId The ID of the user
-     * @param date The date to check
-     * @return True if the user has a workout on the date, false otherwise
-     */
-    @Transaction
-    suspend fun hasWorkoutOnDate(userId: Long, date: Date): Boolean {
-        val calendar = Calendar.getInstance()
-        calendar.time = date
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startOfDay = calendar.time
-        
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        calendar.set(Calendar.MILLISECOND, 999)
-        val endOfDay = calendar.time
-        
-        return getWorkoutCountForDateRange(userId, startOfDay, endOfDay) > 0
-    }
+    @Query("SELECT SUM(calories) FROM workout_history WHERE username = :username AND DATE(startTime/1000, 'unixepoch') = DATE('now')")
+    fun getTodayCaloriesBurned(username: String): LiveData<Int?>
     
-    /**
-     * Get the count of workouts in a date range
-     * @param userId The ID of the user
-     * @param startDate The start date of the range
-     * @param endDate The end date of the range
-     * @return The count of workouts
-     */
-    @Query("SELECT COUNT(*) FROM workout_history WHERE userId = :userId AND startTime BETWEEN :startDate AND :endDate")
-    suspend fun getWorkoutCountForDateRange(userId: Long, startDate: Date, endDate: Date): Int
+    @Query("SELECT COUNT(*) FROM workout_history WHERE username = :username AND DATE(startTime/1000, 'unixepoch') = DATE('now') AND isCompleted = 1")
+    fun getTodayWorkoutCount(username: String): LiveData<Int?>
+    
+    @Query("SELECT SUM(duration)/60 FROM workout_history WHERE username = :username AND DATE(startTime/1000, 'unixepoch') = DATE('now')")
+    fun getTodayWorkoutDuration(username: String): LiveData<Int?>
+    
+    @Query("SELECT SUM(calories) FROM workout_history WHERE username = :username AND isCompleted = 1 AND startTime BETWEEN :startDate AND :endDate")
+    fun getCaloriesBurnedBetweenDates(username: String, startDate: Date, endDate: Date): LiveData<Int?>
+    
+    @Query("SELECT AVG(duration/60) FROM workout_history WHERE username = :username AND isCompleted = 1")
+    fun getAvgWorkoutDurationMinutes(username: String): LiveData<Float?>
+    
+    @Query("UPDATE workout_history SET isCompleted = 1, endTime = :endTime, duration = :duration, calories = :calories, exp = :exp WHERE historyId = :historyId")
+    suspend fun completeWorkout(historyId: String, endTime: Date, duration: Int, calories: Int, exp: Int)
+    
+    @Query("UPDATE workout_history SET strengthGain = :str, enduranceGain = :end, agilityGain = :agi, vitalityGain = :vit, intelligenceGain = :int, luckGain = :luck WHERE historyId = :historyId")
+    suspend fun updateStatGains(historyId: String, str: Int, end: Int, agi: Int, vit: Int, int: Int, luck: Int)
+    
+    @Query("UPDATE workout_history SET rating = :rating, notes = :notes WHERE historyId = :historyId")
+    suspend fun updateFeedback(historyId: String, rating: Int, notes: String?)
+    
+    // Query for workout statistics
+    @Query("SELECT strftime('%w', startTime/1000, 'unixepoch') AS dayOfWeek, COUNT(*) AS count FROM workout_history WHERE username = :username AND isCompleted = 1 GROUP BY dayOfWeek ORDER BY dayOfWeek")
+    fun getWorkoutCountByDayOfWeek(username: String): LiveData<Map<String, Int>>
+    
+    @Query("SELECT strftime('%m', startTime/1000, 'unixepoch') AS month, SUM(calories) AS total FROM workout_history WHERE username = :username AND isCompleted = 1 AND startTime BETWEEN :startDate AND :endDate GROUP BY month ORDER BY month")
+    fun getCaloriesByMonth(username: String, startDate: Date, endDate: Date): LiveData<Map<String, Int>>
 }
